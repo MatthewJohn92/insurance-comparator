@@ -11,10 +11,8 @@ import { useTheme } from "next-themes";
 import DesktopView from './DesktopView';
 import MobileView from './MobileView';
 import FilterModal from './FilterModal';
-// In cima a InsuranceComparisonClient.tsx
 import { IconBadge, ScoreIndicator } from './ui/custom-components';
 
-// Componente per il cambio tema (Dark/Light)
 const ThemeToggle = () => {
     const { theme, setTheme } = useTheme();
     return (
@@ -27,18 +25,15 @@ const ThemeToggle = () => {
 };
 
 export default function InsuranceComparisonClient() {
-    // ... stati esistenti (data, isFilterModalOpen, viewMode, etc.) ...
     const [data] = useState(insuranceData);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'full' | 'compact' | 'summary'>('full');
 
     const headerRef = useRef<HTMLElement>(null);
-    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-    const lastScrollY = useRef(0);
-
-    // NUOVI PEZZI PER IL FOOTER 
     const footerRef = useRef<HTMLElement>(null);
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [footerHeight, setFooterHeight] = useState(0);
+    const lastScrollY = useRef(0);
 
     useEffect(() => {
         const measureFooter = () => {
@@ -46,11 +41,10 @@ export default function InsuranceComparisonClient() {
                 setFooterHeight(footerRef.current.offsetHeight);
             }
         };
-        measureFooter(); // Misura subito
-        window.addEventListener('resize', measureFooter); // Ricalcola se la finestra cambia dimensione
+        measureFooter();
+        window.addEventListener('resize', measureFooter);
         return () => window.removeEventListener('resize', measureFooter);
     }, []);
-    // FINE NUOVI PEZZI PER IL FOOTER 
 
     const maxPremium = useMemo(() => Math.max(...data.offerte.map(o => o.premium_annuale)), [data.offerte]);
 
@@ -61,7 +55,6 @@ export default function InsuranceComparisonClient() {
         searchTerm: '',
     });
     
-    // ... resto degli hook e funzioni (areFiltersActive, handleScroll, etc.) ...
     const areFiltersActive = useMemo(() => {
         return filters.searchTerm !== '' ||
                filters.priceRange[1] < maxPremium ||
@@ -82,9 +75,7 @@ export default function InsuranceComparisonClient() {
 
     useEffect(() => {
         window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-        };
+        return () => window.removeEventListener('scroll', handleScroll);
     }, [handleScroll]);
 
     const { sortedOffers } = useComparisonLogic(data, filters);
@@ -92,21 +83,17 @@ export default function InsuranceComparisonClient() {
     const tableTopOffset = isHeaderVisible ? (headerRef.current?.offsetHeight || 0) : 0;
     
     const handleViewModeToggle = () => {
-        if (viewMode === 'full') setViewMode('compact');
-        else if (viewMode === 'compact') setViewMode('summary');
-        else setViewMode('full');
+        const modes = ['full', 'compact', 'summary'];
+        const currentIndex = modes.indexOf(viewMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        setViewMode(modes[nextIndex] as 'full' | 'compact' | 'summary');
     };
 
     const getViewModeButton = () => {
         switch (viewMode) {
-            case 'full':
-                return { Icon: PanelTopOpen, color: 'text-foreground', title: 'Vista Completa' };
-            case 'compact':
-                return { Icon: PanelTopClose, color: 'text-yellow-500', title: 'Vista Compatta' };
-            case 'summary':
-                return { Icon: ListCollapse, color: 'text-green-500', title: 'Vista Sintetica' };
-            default:
-                return { Icon: PanelTopOpen, color: 'text-foreground', title: 'Vista Completa' };
+            case 'full': return { Icon: PanelTopOpen, color: 'text-foreground', title: 'Vista Completa' };
+            case 'compact': return { Icon: PanelTopClose, color: 'text-yellow-500', title: 'Vista Compatta' };
+            case 'summary': return { Icon: ListCollapse, color: 'text-green-500', title: 'Vista Sintetica' };
         }
     };
     const { Icon, color, title } = getViewModeButton();
@@ -135,7 +122,15 @@ export default function InsuranceComparisonClient() {
             <main className="flex-grow">
                 {sortedOffers.length > 0 ? (
                     <>
-                        <DesktopView data={data} offers={sortedOffers} viewMode={viewMode} tableTopOffset={tableTopOffset} footerHeight={footerHeight} />
+                        <DesktopView 
+                            data={data} 
+                            offers={sortedOffers} 
+                            viewMode={viewMode} 
+                            tableTopOffset={tableTopOffset} 
+                            footerHeight={footerHeight}
+                            // 👇 AGGIUNTA QUESTA PROP 👇
+                            setViewMode={setViewMode}
+                        />
                         <MobileView data={data} offers={sortedOffers} />
                     </>
                 ) : (

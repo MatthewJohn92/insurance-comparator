@@ -1,22 +1,17 @@
 // components/FilterModal.tsx
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-
-// Shadcn UI Components
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-
-// Tipizzazione dei dati
+import { Label } from '@/components/ui/label';
 import { insuranceData } from '@/app/data/insuranceData';
 type InsuranceData = typeof insuranceData;
 
-// --- SEZIONE CORRETTA: Definiamo un tipo per i filtri ---
 interface FiltersState {
     priceRange: [number, number];
     scoreRange: [number, number];
@@ -28,16 +23,27 @@ interface FilterModalProps {
     isOpen: boolean;
     onClose: () => void;
     filters: FiltersState;
-    setFilters: React.Dispatch<React.SetStateAction<FiltersState>>; // Usiamo il nostro tipo
+    setFilters: React.Dispatch<React.SetStateAction<FiltersState>>;
     data: InsuranceData;
 }
 
 export default function FilterModal({ isOpen, onClose, filters, setFilters, data }: FilterModalProps) {
-    // Calcoliamo questi valori una sola volta
+    // 👇 1. Aggiunto nuovo stato per la ricerca delle coperture
+    const [coverageSearchTerm, setCoverageSearchTerm] = useState('');
+
     const allMicroCoverages = useMemo(() => data.categorieCoperture.flatMap(cat => cat.microCoperture), [data]);
     const maxPremium = useMemo(() => Math.ceil(Math.max(...data.offerte.map(o => o.premium_annuale)) / 10) * 10, [data.offerte]);
 
-    // Gestore per le checkbox delle coperture
+    // 👇 2. Nuova logica per filtrare le coperture in base alla ricerca
+    const filteredMicroCoverages = useMemo(() => {
+        if (!coverageSearchTerm) {
+            return allMicroCoverages;
+        }
+        return allMicroCoverages.filter(cov =>
+            cov.nome.toLowerCase().includes(coverageSearchTerm.toLowerCase())
+        );
+    }, [allMicroCoverages, coverageSearchTerm]);
+
     const handleCheckboxChange = (covId: string) => {
         const newSelection = new Set(filters.selectedCoverages);
         if (newSelection.has(covId)) {
@@ -45,11 +51,9 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
         } else {
             newSelection.add(covId);
         }
-        // Non serve più ': any'
         setFilters(prev => ({ ...prev, selectedCoverages: Array.from(newSelection) }));
     };
     
-    // Funzione per resettare tutti i filtri
     const resetFilters = () => {
         setFilters({
             priceRange: [0, maxPremium],
@@ -57,6 +61,7 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
             selectedCoverages: [],
             searchTerm: '',
         });
+        setCoverageSearchTerm(''); // Resetta anche la ricerca coperture
     };
 
     if (!isOpen) return null;
@@ -66,11 +71,11 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
             <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col no-print">
                 <DialogHeader>
                     <DialogTitle className="text-2xl">Filtra Offerte</DialogTitle>
-                    <DialogDescription>Affina la tua ricerca per trovare l offerta perfetta.</DialogDescription>
+                    <DialogDescription>Affina la tua ricerca per trovare l'offerta perfetta.</DialogDescription>
                 </DialogHeader>
 
                 <div className="p-1 pr-3 flex-grow overflow-y-auto space-y-6">
-                    {/* Search Input */}
+                    {/* Search Input per Compagnia */}
                     <div>
                         <Label className="text-base font-semibold">Cerca per compagnia</Label>
                         <div className="relative mt-2">
@@ -78,7 +83,6 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
                             <Input
                                 type="text"
                                 value={filters.searchTerm}
-                                // Non serve più ': any'
                                 onChange={e => setFilters(f => ({ ...f, searchTerm: e.target.value }))}
                                 placeholder="Es. AXA, Zurich..."
                                 className="pl-10"
@@ -96,7 +100,6 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
                                     max={maxPremium}
                                     step={10}
                                     value={[filters.priceRange[1]]}
-                                    // Non serve più ': any'
                                     onValueChange={(value) => setFilters(prev => ({ ...prev, priceRange: [prev.priceRange[0], value[0]] }))}
                                 />
                                 <span className="font-mono text-muted-foreground text-sm w-24 text-right">
@@ -112,7 +115,6 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
                                     max={100}
                                     step={5}
                                     value={[filters.scoreRange[0]]}
-                                    // Non serve più ': any'
                                     onValueChange={(value) => setFilters(f => ({ ...f, scoreRange: [value[0], f.scoreRange[1]] }))}
                                 />
                                 <span className="font-mono text-muted-foreground text-sm w-24 text-right">
@@ -122,11 +124,25 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
                         </div>
                     </div>
 
-                    {/* Checkboxes */}
-                    <div>
+                    {/* Checkboxes per Coperture */}
+                    <div className="space-y-4">
                         <Label className="text-base font-semibold">Coperture Essenziali</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 max-h-60 overflow-y-auto p-3 mt-2 border rounded-md">
-                            {allMicroCoverages.map(cov => (
+                        
+                        {/* 👇 3. Aggiunto nuovo campo di ricerca per le coperture 👇 */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                type="text"
+                                value={coverageSearchTerm}
+                                onChange={(e) => setCoverageSearchTerm(e.target.value)}
+                                placeholder="Cerca copertura (es. Furto, Danni...)"
+                                className="pl-10"
+                            />
+                        </div>
+
+                        {/* 👇 4. La lista ora usa le coperture filtrate 👇 */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 max-h-60 overflow-y-auto p-3 border rounded-md">
+                            {filteredMicroCoverages.map(cov => (
                                 <div key={cov.id} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={cov.id}
