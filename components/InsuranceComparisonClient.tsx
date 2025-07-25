@@ -157,9 +157,9 @@ export default function InsuranceComparisonClient() {
                 )}
             </main>
             
-            <footer ref={footerRef} className="text-center p-4 text-xs text-muted-foreground no-print">
-                copyright L+G SA Matteo Luca
-            </footer>
+<footer ref={footerRef} className="text-center p-4 text-xs text-muted-foreground no-print hidden md:block">
+    copyright L+G SA Matteo Luca
+</footer>
 
             <FilterModal isOpen={isFilterModalOpen} onClose={() => setFilterModalOpen(false)} filters={filters} setFilters={setFilters} data={data} />
         </div>
