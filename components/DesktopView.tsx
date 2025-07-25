@@ -2,12 +2,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-
-// Icons
+// ... altri import ...
 import { ChevronDown, Check, X, FileDown, Star, Award, Gem, Car, User } from 'lucide-react';
-
-// Helper Components & Types
-import { IconBadge, ScoreIndicator } from './InsuranceComparisonClient';
+import { IconBadge, ScoreIndicator } from './ui/custom-components';
 import useComparisonLogic from '@/hooks/useComparisonLogic';
 import { insuranceData } from '@/app/data/insuranceData';
 type InsuranceData = typeof insuranceData;
@@ -18,54 +15,38 @@ interface DesktopViewProps {
     offers: OfferWithScores[];
     viewMode: 'full' | 'compact' | 'summary';
     tableTopOffset: number;
+    footerHeight: number; //Aggiunta la nuova prop per gestire l'altezza del footer
 }
 
-export default function DesktopView({ data, offers, viewMode, tableTopOffset }: DesktopViewProps) {
+export default function DesktopView({ data, offers, viewMode, tableTopOffset, footerHeight }: DesktopViewProps) {
+    // ... logica del componente (useState, useRef, handlers) ...
     const [openCategories, setOpenCategories] = useState(() =>
         Object.fromEntries(data.categorieCoperture.map(c => [c.nome, true]))
     );
     
-    // --- INIZIO LOGICA DRAG-TO-SCROLL ---
-
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
-    // Usiamo useRef per startX e scrollLeft per non causare ri-renderizzazioni durante il trascinamento
     const startX = useRef(0);
     const scrollLeft = useRef(0);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (!scrollContainerRef.current) return;
-        // 1. Attiva la modalità trascinamento
         setIsDragging(true);
-        // 2. Salva la posizione iniziale del mouse e dello scroll
         startX.current = e.pageX - scrollContainerRef.current.offsetLeft;
         scrollLeft.current = scrollContainerRef.current.scrollLeft;
     };
 
-    const handleMouseLeave = () => {
-        // 3. Se il mouse esce dal contenitore, interrompi il trascinamento
-        setIsDragging(false);
-    };
-
-    const handleMouseUp = () => {
-        // 4. Al rilascio del click, interrompi il trascinamento
-        setIsDragging(false);
-    };
+    const handleMouseLeave = () => { setIsDragging(false); };
+    const handleMouseUp = () => { setIsDragging(false); };
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        // 5. Se non stiamo trascinando, non fare nulla
         if (!isDragging || !scrollContainerRef.current) return;
-        // Evita il comportamento di default del browser (es. selezionare testo)
         e.preventDefault();
-        // 6. Calcola il movimento del mouse e aggiorna la posizione dello scroll
         const x = e.pageX - scrollContainerRef.current.offsetLeft;
-        const walk = (x - startX.current) * 2; // Moltiplichiamo per 2 per rendere lo scroll più reattivo
+        const walk = (x - startX.current) * 2;
         scrollContainerRef.current.scrollLeft = scrollLeft.current - walk;
     };
     
-    // --- FINE LOGICA DRAG-TO-SCROLL ---
-
-
     useEffect(() => {
         if (viewMode === 'summary') {
             setOpenCategories(Object.fromEntries(data.categorieCoperture.map(c => [c.nome, false])));
@@ -82,31 +63,30 @@ export default function DesktopView({ data, offers, viewMode, tableTopOffset }: 
 
     const showDetails = viewMode === 'full';
     const microRowClass = `flex flex-col p-3 transition-all duration-300 ${showDetails ? 'h-[5.5rem]' : 'h-14'}`;
-    const macroRowClass = "flex items-center justify-center p-3 bg-muted/50 h-12";
+    const macroRowClass = "flex items-center justify-center p-3 bg-muted h-12";
 
     if (offers.length === 0) return null;
 
     return (
         <div className="hidden md:block" id="print-area">
             <div
-                // Aggiungiamo il ref al contenitore che scrolla
                 ref={scrollContainerRef}
                 className="overflow-x-auto scrollbar-hide"
-                style={{ height: `calc(100vh - ${tableTopOffset}px)` }}
+                // Calcolo dell'altezza aggiornato per sottrarre anche l'altezza del footer
+                style={{ height: `calc(100vh - ${tableTopOffset}px - ${footerHeight}px)` }}
             >
                 <div
-                    className={`grid bg-background ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`grid bg-background w-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                     style={{
-                        gridTemplateColumns: `18rem repeat(${offers.length}, 14rem)`,
-                        width: `${18 + offers.length * 14}rem`,
+                        gridTemplateColumns: `18rem repeat(${offers.length}, minmax(14rem, 1fr))`, 
+                        minWidth: `${18 + offers.length * 14}rem`, 
                     }}
-                    // Aggiungiamo gli event handler al contenitore della griglia
                     onMouseDown={handleMouseDown}
                     onMouseLeave={handleMouseLeave}
                     onMouseUp={handleMouseUp}
                     onMouseMove={handleMouseMove}
                 >
-                    {/* --- HEADER ROW (invariato) --- */}
+                    {/* ... TUTTO IL RESTO DEL CODICE JSX DELLA TABELLA (invariato) ... */}
                     <div className="sticky top-0 left-0 z-30 bg-background border-r border-b flex flex-col items-center justify-center p-3 text-center h-[7.5rem]">
                         <Car className="h-7 w-7 text-primary mb-1" />
                         <p className="text-xs font-bold text-foreground leading-tight">{data.cliente.prodotto}</p>
@@ -117,8 +97,7 @@ export default function DesktopView({ data, offers, viewMode, tableTopOffset }: 
                     </div>
 
                     {offers.map(offer => (
-                        <div key={offer.id} className="sticky top-0 z-20 bg-muted/50 border-r border-b p-2 h-[7.5rem]">
-                           {/* ... contenuto delle card header ... (invariato) */}
+                        <div key={offer.id} className="sticky top-0 z-20 bg-muted border-r border-b p-2 h-[7.5rem]">
                            <div className="relative flex flex-col items-center text-center h-full justify-center">
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <img src={offer.logo} alt={`${offer.company} Logo`} className="h-5 w-5 rounded-full object-contain border bg-white" />
@@ -144,10 +123,9 @@ export default function DesktopView({ data, offers, viewMode, tableTopOffset }: 
                         </div>
                     ))}
 
-                    {/* --- BODY ROWS (invariato) --- */}
                     {data.categorieCoperture.map(category => (
                         <React.Fragment key={category.nome}>
-                            <div className="sticky left-0 z-10 bg-muted/50 border-r border-b flex items-center justify-between p-3 h-12">
+                            <div className="sticky left-0 z-10 bg-muted border-r border-b flex items-center justify-between p-3 h-12">
                                 <h3 className="font-bold text-sm text-foreground">{category.nome}</h3>
                                 <button
                                     type="button"
@@ -174,7 +152,6 @@ export default function DesktopView({ data, offers, viewMode, tableTopOffset }: 
                                         const coverage = offer.coverages[micro.id as keyof typeof offer.coverages];
                                         return (
                                             <div key={`${offer.id}-${micro.id}`} className={`bg-background border-r border-b ${microRowClass}`}>
-                                               {/* ... contenuto delle celle ... (invariato) */}
                                                {coverage && coverage.covered ? (
                                                     <>
                                                         <div className="flex items-center justify-center gap-2">
@@ -199,12 +176,11 @@ export default function DesktopView({ data, offers, viewMode, tableTopOffset }: 
                         </React.Fragment>
                     ))}
 
-                    {/* --- RIGA FINALE OSSERVAZIONI (invariato) --- */}
-                    <div className="sticky left-0 z-10 bg-muted/50 border-r border-t p-3 h-24 flex items-center">
+                    <div className="sticky left-0 z-10 bg-muted border-r border-t p-3 h-24 flex items-center">
                         <h3 className="font-bold text-sm text-foreground">Osservazione Finale</h3>
                     </div>
                     {offers.map(offer => (
-                        <div key={offer.id} id={`observation-cell-${offer.id}`} className="bg-muted/50 border-r border-t p-3 h-24 flex flex-col justify-center items-center text-center">
+                        <div key={offer.id} id={`observation-cell-${offer.id}`} className="bg-muted border-r border-t p-3 h-24 flex flex-col justify-center items-center text-center">
                             <p className="text-xs text-muted-foreground italic mb-2">{offer.osservazione}</p>
                             <a href={offer.pdf_link} download className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
                                 <FileDown className="h-3 w-3" />

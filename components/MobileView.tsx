@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Check, X, FileDown, Gem, Award, Star } from 'lucide-react';
 
 // Helper Components & Types
-import { ScoreIndicator, IconBadge } from './InsuranceComparisonClient';
+import { ScoreIndicator, IconBadge } from './ui/custom-components';
 import useComparisonLogic from '@/hooks/useComparisonLogic';
 import { insuranceData } from '@/app/data/insuranceData';
 type InsuranceData = typeof insuranceData;

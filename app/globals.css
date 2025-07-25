@@ -155,3 +155,13 @@
   #print-area .bg-background { background-color: white !important; -webkit-print-color-adjust: exact; }
   #print-area .bg-muted\/50 { background-color: #f9fafb !important; -webkit-print-color-adjust: exact; }
 }
+
+/* Stile personalizzato per l'header */
+@layer components {
+  header {
+    background-color: #ffffff; /* Colore per la modalità chiara */
+  }
+  .dark header {
+    background-color: #000000; /* Colore per la modalità scura */
+  }
+}
