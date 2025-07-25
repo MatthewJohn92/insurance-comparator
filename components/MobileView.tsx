@@ -404,14 +404,17 @@ export default function MobileView({
             {visibleOffer?.osservazione}
           </DrawerDescription>
         </DrawerHeader>
-        <DrawerFooter>
-          <Button asChild>
-            <a href={visibleOffer?.pdf_link} download>
-              <FileDown className="mr-2 h-4 w-4" />
-              Scarica Offerta PDF
-            </a>
-          </Button>
-        </DrawerFooter>
+ <DrawerFooter>
+    <Button
+        asChild
+        className="bg-sidebar-foreground hover:bg-sidebar-primary"
+    >
+        <a href={visibleOffer?.pdf_link} download>
+            <FileDown className="mr-2 h-4 w-4" />
+            Scarica Offerta PDF
+        </a>
+    </Button>
+</DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
