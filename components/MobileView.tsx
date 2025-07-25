@@ -361,7 +361,7 @@ export default function MobileView({
         className="md:hidden flex flex-col bg-muted/30"
         style={{ height: `calc(100vh - ${MAIN_HEADER_HEIGHT}px)` }}
       >
-        <header className="sticky top-0 z-10">
+        <header className="sticky top-0 z-10 bg-primary text-primary-foreground">
           <OfferNavigator
             offers={offers}
             visibleOfferId={visibleOfferId}

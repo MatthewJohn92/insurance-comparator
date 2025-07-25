@@ -103,7 +103,7 @@ export default function InsuranceComparisonClient() {
 
     return (
         <div className="font-sans bg-background text-foreground min-h-screen flex flex-col">
-            <header ref={headerRef} className={`p-2 md:p-2 border-b border-b-black/20 sticky top-0 z-40 no-print transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'} flex items-center justify-between`}>
+            <header ref={headerRef} className={`p-2 md:p-2 border-b border-border bg-primary text-primary-foreground sticky top-0 z-40 no-print transition-transform duration-300 ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'} flex items-center justify-between`}>
                 <div>
                     <Image src="/LG_original.svg" alt="L+G SA Logo" width={120} height={35} className="h-7 w-auto dark:hidden" />
                     <Image src="/LG_white.svg" alt="L+G SA Logo" width={120} height={35} className="h-7 w-auto hidden dark:block" />
