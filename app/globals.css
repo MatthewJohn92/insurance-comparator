@@ -120,3 +120,38 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Stili per nascondere la scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Stili per la stampa */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  /* Forza i colori di sfondo durante la stampa */
+  #print-area .bg-background { background-color: white !important; -webkit-print-color-adjust: exact; }
+  #print-area .bg-muted\/50 { background-color: #f9fafb !important; -webkit-print-color-adjust: exact; }
+}
