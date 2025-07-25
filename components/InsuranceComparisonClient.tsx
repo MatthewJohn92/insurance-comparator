@@ -13,6 +13,7 @@ import MobileView from './MobileView';
 import FilterModal from './FilterModal';
 import { IconBadge, ScoreIndicator } from './ui/custom-components';
 
+// ... (Componente ThemeToggle rimane invariato)
 const ThemeToggle = () => {
     const { theme, setTheme } = useTheme();
     return (
@@ -24,7 +25,9 @@ const ThemeToggle = () => {
     );
 };
 
+
 export default function InsuranceComparisonClient() {
+    // ... (Tutti gli hook useState, useRef, useEffect rimangono invariati)
     const [data] = useState(insuranceData);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'full' | 'compact' | 'summary'>('full');
@@ -55,6 +58,8 @@ export default function InsuranceComparisonClient() {
         searchTerm: '',
     });
     
+    const { sortedOffers } = useComparisonLogic(data, filters);
+    
     const areFiltersActive = useMemo(() => {
         return filters.searchTerm !== '' ||
                filters.priceRange[1] < maxPremium ||
@@ -78,8 +83,6 @@ export default function InsuranceComparisonClient() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [handleScroll]);
 
-    const { sortedOffers } = useComparisonLogic(data, filters);
-    
     const tableTopOffset = isHeaderVisible ? (headerRef.current?.offsetHeight || 0) : 0;
     
     const handleViewModeToggle = () => {
@@ -106,7 +109,7 @@ export default function InsuranceComparisonClient() {
                     <Image src="/LG_white.svg" alt="L+G SA Logo" width={120} height={35} className="h-7 w-auto hidden dark:block" />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button onClick={handleViewModeToggle} title={title} variant="outline" size="sm" className={`hidden md:block ${color}`}>
+                    <Button onClick={handleViewModeToggle} title={title} variant="outline" size="sm" className={`${color}`}>
                         <Icon size={16} className="m-auto" />
                     </Button>
                     <Button onClick={() => window.print()} title="Stampa Tabella" variant="outline" size="sm" className="hidden md:block">
@@ -127,13 +130,22 @@ export default function InsuranceComparisonClient() {
                             offers={sortedOffers} 
                             viewMode={viewMode} 
                             tableTopOffset={tableTopOffset} 
+                            // 👇 Passiamo l'altezza del footer qui
                             footerHeight={footerHeight}
-                            // 👇 AGGIUNTA QUESTA PROP 👇
                             setViewMode={setViewMode}
+                            filters={filters}
                         />
-                        <MobileView data={data} offers={sortedOffers} />
+                        <MobileView 
+                            data={data} 
+                            offers={sortedOffers} 
+                            filters={filters}
+                            viewMode={viewMode}
+                            // 👇 Passiamo l'altezza del footer qui
+                            
+                        />
                     </>
                 ) : (
+                    // ... (blocco "Nessuna offerta trovata" invariato)
                     <div className="flex flex-col items-center justify-center text-center p-10 h-full">
                         <p className="text-xl font-semibold">Nessuna offerta trovata</p>
                         <p className="text-muted-foreground mt-2">Prova a modificare i filtri per trovare più risultati.</p>
