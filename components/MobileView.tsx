@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 type InsuranceData = typeof insuranceData;
 type OfferWithScores = ReturnType<typeof useComparisonLogic>['sortedOffers'][number];
 
-// --- COMPONENTE NAVIGATOR ---
+// --- COMPONENTE NAVIGATOR (invariato) ---
 interface OfferNavigatorProps {
     offers: OfferWithScores[];
     visibleOfferId: number | null;
@@ -27,11 +27,12 @@ const OfferNavigator: React.FC<OfferNavigatorProps> = ({ offers, visibleOfferId,
         }
     }, [visibleOfferId]);
     return (
-        <div className="bg-muted border-b p-2 flex-shrink-0">
+        <div className="sticky top-[56px] z-20 bg-muted border-b p-2">
             <div className="relative"><div ref={navContainerRef} className="flex gap-3 overflow-x-auto scrollbar-hide">{offers.map(offer => (<button key={offer.id} data-offer-id={offer.id} onClick={() => onNavigate(offer.id)} className={cn("flex-shrink-0 p-2 rounded-md border-2 bg-background transition-all duration-300", visibleOfferId === offer.id ? "border-primary opacity-100" : "border-transparent opacity-50 hover:opacity-100 hover:border-muted-foreground/50")}><img src={offer.logo} alt={offer.company} className="h-6 object-contain" /></button>))}</div><div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-muted to-transparent pointer-events-none" /></div>
         </div>
     );
 };
+
 
 interface FiltersState {
     selectedCoverages: string[];
@@ -98,15 +99,22 @@ const MobileOfferCard = ({ offer, data, filters, viewMode, onVisible, sharedScro
         <div ref={cardRef} id={`offer-card-${offer.id}`} className="w-screen h-full flex-shrink-0 snap-center flex flex-col">
             <div ref={scrollableContentRef} onScroll={handleScroll} className="flex-grow overflow-y-auto scrollbar-hide p-4 space-y-3">
                 
-                <div className="sticky top-0 z-10 space-y-3 bg-background pt-1">
-                    <div className="bg-muted rounded-lg p-2 flex items-center gap-4 text-sm">
-                        <Car className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                        <div>
-                            <p className="font-bold text-xs">{data.cliente.prodotto}</p>
-                            <p className="text-muted-foreground text-xs flex items-center gap-1.5"><User className="h-3 w-3" />{data.cliente.nome}</p>
+                {/* 👇 BLOCCO UNICO STICKY 👇 */}
+                <div className="sticky top-0 z-10 shadow-lg rounded-lg">
+                    {/* Banner Info Cliente */}
+                    <div className="bg-ring text-ring-foreground rounded-t-lg p-2 flex items-center justify-between gap-4 text-xs">
+                        <div className="flex items-center gap-2 truncate">
+                            <Car className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate font-semibold">{data.cliente.prodotto}</span>
+                        </div>
+                        <div className="flex items-center gap-2 truncate">
+                             <User className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{data.cliente.nome}</span>
                         </div>
                     </div>
-                    <Card className="shadow-lg bg-card">
+                    
+                    {/* Card Offerta (senza angoli superiori arrotondati) */}
+                    <Card className="rounded-t-none">
                         <CardHeader className="flex flex-col items-center text-center p-3">
                             <img src={offer.logo} alt={`${offer.company} Logo`} className="h-12 mb-2 object-contain" />
                             <CardTitle className="text-xl">{offer.company}</CardTitle>
@@ -120,8 +128,10 @@ const MobileOfferCard = ({ offer, data, filters, viewMode, onVisible, sharedScro
                     </Card>
                 </div>
 
+                {/* Card delle Coperture */}
                 {displayedCategories.map(category => (<Card key={category.nome} className="shadow-lg bg-muted/50"><CardHeader onClick={() => toggleCategory(category.nome)} className="flex flex-row justify-between items-center cursor-pointer p-3"><CardTitle className="text-base">{category.nome}</CardTitle><div className="flex items-center gap-4"><div className="flex items-center gap-2 text-sm"><span className="text-muted-foreground hidden sm:inline">Media:</span><ScoreIndicator score={offer.macroScores[category.nome]} /></div><ChevronDown className={`transition-transform ${openCategories[category.nome] ? 'rotate-180' : ''}`} /></div></CardHeader>{openCategories[category.nome] && (<CardContent className="p-0 border-t"><div className="divide-y divide-muted-foreground/20">{category.microCoperture.map(micro => { const coverage = offer.coverages[micro.id as keyof typeof offer.coverages]; return (<div key={micro.id} className="flex items-start justify-between p-3 bg-background"><p className="w-1/2 pr-4 font-semibold text-sm">{micro.nome}</p><div className="w-1/2 flex flex-col items-end text-right text-sm">{coverage && coverage.covered ? (<><div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /><ScoreIndicator score={coverage.score} /></div>{showDetails && <p className="text-xs text-muted-foreground mt-1">{coverage.details}</p>}</>) : (<div className="flex items-center gap-2 text-muted-foreground"><X className="h-4 w-4 text-red-500" /><span>{coverage?.details || 'Non inclusa'}</span></div>)}</div></div>);})}</div></CardContent>)}</Card>))}
             
+                {/* Card Osservazione Finale */}
                 <Card className="shadow-lg">
                     <CardHeader onClick={() => setIsObservationOpen(prev => !prev)} className="flex flex-row justify-between items-center cursor-pointer p-3"><CardTitle className="text-base">Osservazione Finale</CardTitle><ChevronDown className={`transition-transform ${isObservationOpen ? 'rotate-180' : ''}`} /></CardHeader>
                     {isObservationOpen && (<CardContent className="pt-2 p-3"><p className="text-sm text-muted-foreground italic">{offer.osservazione}</p></CardContent>)}
@@ -131,6 +141,7 @@ const MobileOfferCard = ({ offer, data, filters, viewMode, onVisible, sharedScro
         </div>
     );
 };
+
 
 export default function MobileView({ data, offers, filters, viewMode }: MobileViewProps) {
     const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -146,8 +157,10 @@ export default function MobileView({ data, offers, filters, viewMode }: MobileVi
 
     if (offers.length === 0) return null;
     
+    const HEADER_HEIGHT = 56;
+    
     return (
-        <div className="md:hidden flex flex-col h-full">
+        <div className="md:hidden flex flex-col" style={{ height: `calc(100vh - ${HEADER_HEIGHT}px)` }}>
             <OfferNavigator 
                 offers={offers} 
                 visibleOfferId={visibleOfferId}
