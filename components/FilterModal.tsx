@@ -71,7 +71,7 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
             <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col no-print">
                 <DialogHeader>
                     <DialogTitle className="text-2xl">Filtra Offerte</DialogTitle>
-                    <DialogDescription>Affina la tua ricerca per trovare l'offerta perfetta.</DialogDescription>
+                    <DialogDescription>Affina la tua ricerca per trovare offerta perfetta.</DialogDescription>
                 </DialogHeader>
 
                 <div className="p-1 pr-3 flex-grow overflow-y-auto space-y-6">
