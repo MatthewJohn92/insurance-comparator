@@ -1,290 +1,219 @@
 // components/DesktopView.tsx
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 
 // Icons
-import {
-  ChevronDown,
-  Check,
-  X,
-  FileDown,
-  Star,
-  Award,
-  Gem,
-  Car,
-  User,
-} from "lucide-react";
+import { ChevronDown, Check, X, FileDown, Star, Award, Gem, Car, User } from 'lucide-react';
 
-// Helper Components (li abbiamo già definiti in InsuranceComparisonClient)
-import { IconBadge, ScoreIndicator } from "./InsuranceComparisonClient";
-
-// Type definitions
+// Helper Components & Types
+import { IconBadge, ScoreIndicator } from './InsuranceComparisonClient';
+import useComparisonLogic from '@/hooks/useComparisonLogic';
 import { insuranceData } from '@/app/data/insuranceData';
-import useComparisonLogic from '@/hooks/useComparisonLogic'; // Importa l'hook per leggerne il tipo
-
 type InsuranceData = typeof insuranceData;
 type OfferWithScores = ReturnType<typeof useComparisonLogic>['sortedOffers'][number];
 
 interface DesktopViewProps {
-  data: InsuranceData;
-  offers: OfferWithScores[];
-  viewMode: "full" | "compact" | "summary";
-  tableTopOffset: number;
+    data: InsuranceData;
+    offers: OfferWithScores[];
+    viewMode: 'full' | 'compact' | 'summary';
+    tableTopOffset: number;
 }
 
-export default function DesktopView({
-  data,
-  offers,
-  viewMode,
-  tableTopOffset,
-}: DesktopViewProps) {
-  const [openCategories, setOpenCategories] = useState(() =>
-    Object.fromEntries(data.categorieCoperture.map((c) => [c.nome, true]))
-  );
-  const containerRef = useRef<HTMLDivElement>(null);
+export default function DesktopView({ data, offers, viewMode, tableTopOffset }: DesktopViewProps) {
+    const [openCategories, setOpenCategories] = useState(() =>
+        Object.fromEntries(data.categorieCoperture.map(c => [c.nome, true]))
+    );
+    
+    // --- INIZIO LOGICA DRAG-TO-SCROLL ---
 
-  // Gestisce l'apertura/chiusura delle categorie in base alla modalità di vista
-  useEffect(() => {
-    if (viewMode === "summary") {
-      setOpenCategories(
-        Object.fromEntries(data.categorieCoperture.map((c) => [c.nome, false]))
-      );
-    } else {
-      setOpenCategories(
-        Object.fromEntries(data.categorieCoperture.map((c) => [c.nome, true]))
-      );
-    }
-  }, [viewMode, data.categorieCoperture]);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    // Usiamo useRef per startX e scrollLeft per non causare ri-renderizzazioni durante il trascinamento
+    const startX = useRef(0);
+    const scrollLeft = useRef(0);
 
-  const toggleCategory = (categoryName: string) => {
-    // La vista 'summary' ha sempre le categorie chiuse
-    if (viewMode !== "summary") {
-      setOpenCategories((prev) => ({
-        ...prev,
-        [categoryName]: !prev[categoryName],
-      }));
-    }
-  };
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!scrollContainerRef.current) return;
+        // 1. Attiva la modalità trascinamento
+        setIsDragging(true);
+        // 2. Salva la posizione iniziale del mouse e dello scroll
+        startX.current = e.pageX - scrollContainerRef.current.offsetLeft;
+        scrollLeft.current = scrollContainerRef.current.scrollLeft;
+    };
 
-  const showDetails = viewMode === "full";
-  const microRowClass = `flex flex-col p-3 transition-all duration-300 ${
-    showDetails ? "h-[5.5rem]" : "h-14"
-  }`;
-  const macroRowClass = "flex items-center justify-center p-3 bg-muted/50 h-12";
+    const handleMouseLeave = () => {
+        // 3. Se il mouse esce dal contenitore, interrompi il trascinamento
+        setIsDragging(false);
+    };
 
-  // Se non ci sono offerte, non mostrare nulla
-  if (offers.length === 0) return null;
+    const handleMouseUp = () => {
+        // 4. Al rilascio del click, interrompi il trascinamento
+        setIsDragging(false);
+    };
 
-  return (
-    <div className="hidden md:block" id="print-area">
-      <div
-        ref={containerRef}
-        className="overflow-auto scrollbar-hide"
-        style={{ height: `calc(100vh - ${tableTopOffset}px)` }}
-      >
-        <div
-          className="grid bg-background"
-          style={{
-            gridTemplateColumns: `18rem repeat(${offers.length}, 14rem)`,
-            width: `${18 + offers.length * 14}rem`, // Larghezza totale dinamica
-          }}
-        >
-          {/* --- HEADER ROW --- */}
-          <div className="sticky top-0 left-0 z-30 bg-background border-r border-b flex flex-col items-center justify-center p-3 text-center h-[7.5rem]">
-            <Car className="h-7 w-7 text-primary mb-1" />
-            <p className="text-xs font-bold text-foreground leading-tight">
-              {data.cliente.prodotto}
-            </p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <User className="h-3 w-3 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">
-                {data.cliente.nome}
-              </p>
-            </div>
-          </div>
+    const handleMouseMove = (e: React.MouseEvent) => {
+        // 5. Se non stiamo trascinando, non fare nulla
+        if (!isDragging || !scrollContainerRef.current) return;
+        // Evita il comportamento di default del browser (es. selezionare testo)
+        e.preventDefault();
+        // 6. Calcola il movimento del mouse e aggiorna la posizione dello scroll
+        const x = e.pageX - scrollContainerRef.current.offsetLeft;
+        const walk = (x - startX.current) * 2; // Moltiplichiamo per 2 per rendere lo scroll più reattivo
+        scrollContainerRef.current.scrollLeft = scrollLeft.current - walk;
+    };
+    
+    // --- FINE LOGICA DRAG-TO-SCROLL ---
 
-          {offers.map((offer) => (
+
+    useEffect(() => {
+        if (viewMode === 'summary') {
+            setOpenCategories(Object.fromEntries(data.categorieCoperture.map(c => [c.nome, false])));
+        } else {
+            setOpenCategories(Object.fromEntries(data.categorieCoperture.map(c => [c.nome, true])));
+        }
+    }, [viewMode, data.categorieCoperture]);
+
+    const toggleCategory = (categoryName: string) => {
+        if (viewMode !== 'summary') {
+            setOpenCategories(prev => ({ ...prev, [categoryName]: !prev[categoryName] }));
+        }
+    };
+
+    const showDetails = viewMode === 'full';
+    const microRowClass = `flex flex-col p-3 transition-all duration-300 ${showDetails ? 'h-[5.5rem]' : 'h-14'}`;
+    const macroRowClass = "flex items-center justify-center p-3 bg-muted/50 h-12";
+
+    if (offers.length === 0) return null;
+
+    return (
+        <div className="hidden md:block" id="print-area">
             <div
-              key={offer.id}
-              className="sticky top-0 z-20 bg-muted/50 border-r border-b p-2 h-[7.5rem]"
+                // Aggiungiamo il ref al contenitore che scrolla
+                ref={scrollContainerRef}
+                className="overflow-x-auto scrollbar-hide"
+                style={{ height: `calc(100vh - ${tableTopOffset}px)` }}
             >
-              <div className="relative flex flex-col items-center text-center h-full justify-center">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <img
-                    src={offer.logo}
-                    alt={`${offer.company} Logo`}
-                    className="h-5 w-5 rounded-full object-contain border bg-white"
-                  />
-                  <p className="font-bold text-sm text-foreground">
-                    {offer.company}
-                  </p>
-                </div>
-                <p className="text-[11px] text-muted-foreground mb-1.5">
-                  {offer.policyNumber}
-                </p>
-                <div className="text-xl font-bold text-foreground mb-1.5">
-                  {offer.premium_annuale
-                    .toLocaleString("de-CH", {
-                      style: "currency",
-                      currency: "CHF",
-                      minimumFractionDigits: 2,
-                    })
-                    .replace("CHF", "")
-                    .trim()}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Score:</span>
-                  <ScoreIndicator score={offer.finalScore} />
-                </div>
-                <div className="absolute top-1 right-1 flex flex-col gap-1.5">
-                  {offer.isBestValue && (
-                    <IconBadge
-                      icon={Gem}
-                      title="Miglior Rapporto Qualità/Prezzo"
-                      colorClass="text-amber-400"
-                      bgColorClass="bg-amber-400/20"
-                    />
-                  )}
-                  {offer.isBestScore && (
-                    <IconBadge
-                      icon={Award}
-                      title="Miglior Punteggio"
-                      colorClass="text-teal-400"
-                      bgColorClass="bg-teal-400/20"
-                    />
-                  )}
-                  {offer.isBestPrice && (
-                    <IconBadge
-                      icon={Star}
-                      title="Miglior Prezzo"
-                      colorClass="text-sky-400"
-                      bgColorClass="bg-sky-400/20"
-                    />
-                  )}
-                </div>
-                <a
-                  href={offer.pdf_link}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute bottom-1 right-1 text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <FileDown className="h-4 w-4" />
-                </a>
-              </div>
-            </div>
-          ))}
-
-          {/* --- BODY ROWS (CATEGORIE E COPERTURE) --- */}
-          {data.categorieCoperture.map((category) => (
-            <React.Fragment key={category.nome}>
-              {/* Macro Category Row */}
-              <div className="sticky left-0 z-10 bg-muted/50 border-r border-b flex items-center justify-between p-3 h-12">
-                <h3 className="font-bold text-sm text-foreground">
-                  {category.nome}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => toggleCategory(category.nome)}
-                  className="text-muted-foreground hover:text-foreground"
-                  aria-label={`Espandi o collassa la categoria ${category.nome}`}
-                >
-                  <ChevronDown
-                    className={`h-5 w-5 transition-transform ${
-                      openCategories[category.nome] ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-              </div>
-              {offers.map((offer) => (
                 <div
-                  key={offer.id}
-                  className={`${macroRowClass} border-r border-b`}
+                    className={`grid bg-background ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    style={{
+                        gridTemplateColumns: `18rem repeat(${offers.length}, 14rem)`,
+                        width: `${18 + offers.length * 14}rem`,
+                    }}
+                    // Aggiungiamo gli event handler al contenitore della griglia
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseUp={handleMouseUp}
+                    onMouseMove={handleMouseMove}
                 >
-                  <span className="text-xs text-muted-foreground mr-2">
-                    Media:
-                  </span>
-                  <ScoreIndicator score={offer.macroScores[category.nome]} />
-                </div>
-              ))}
-
-              {/* Micro Coverage Rows (visibili se la categoria è aperta) */}
-              {openCategories[category.nome] &&
-                category.microCoperture.map((micro) => (
-                  <React.Fragment key={micro.id}>
-                    <div
-                      className={`sticky left-0 z-10 bg-background border-r border-b ${microRowClass}`}
-                    >
-                      <span className="font-bold text-xs text-foreground">
-                        {micro.nome}
-                      </span>
-                    </div>
-                    {offers.map((offer) => {
-                      const coverage =
-                        offer.coverages[
-                          micro.id as keyof typeof offer.coverages
-                        ];
-                      return (
-                        <div
-                          key={`${offer.id}-${micro.id}`}
-                          className={`bg-background border-r border-b ${microRowClass}`}
-                        >
-                          {coverage && coverage.covered ? (
-                            <>
-                              <div className="flex items-center justify-center gap-2">
-                                <Check className="h-4 w-4 text-green-500" />
-                                <ScoreIndicator score={coverage.score} />
-                              </div>
-                              {showDetails && (
-                                <p className="text-[11px] text-muted-foreground text-center mt-1">
-                                  {coverage.details}
-                                </p>
-                              )}
-                            </>
-                          ) : (
-                            <div className="flex items-center justify-center gap-2 text-center">
-                              <X className="h-4 w-4 text-red-500" />
-                              <span className="text-xs text-muted-foreground">
-                                {coverage?.details || "Non inclusa"}
-                              </span>
-                            </div>
-                          )}
+                    {/* --- HEADER ROW (invariato) --- */}
+                    <div className="sticky top-0 left-0 z-30 bg-background border-r border-b flex flex-col items-center justify-center p-3 text-center h-[7.5rem]">
+                        <Car className="h-7 w-7 text-primary mb-1" />
+                        <p className="text-xs font-bold text-foreground leading-tight">{data.cliente.prodotto}</p>
+                        <div className="flex items-center gap-1.5 mt-2">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">{data.cliente.nome}</p>
                         </div>
-                      );
-                    })}
-                  </React.Fragment>
-                ))}
-            </React.Fragment>
-          ))}
+                    </div>
 
-          {/* --- RIGA FINALE OSSERVAZIONI --- */}
-          <div className="sticky left-0 z-10 bg-muted/50 border-r border-t p-3 h-24 flex items-center">
-            <h3 className="font-bold text-sm text-foreground">
-              Osservazione Finale
-            </h3>
-          </div>
-          {offers.map((offer) => (
-            <div
-              key={offer.id}
-              id={`observation-cell-${offer.id}`}
-              className="bg-muted/50 border-r border-t p-3 h-24 flex flex-col justify-center items-center text-center"
-            >
-              <p className="text-xs text-muted-foreground italic mb-2">
-                {offer.osservazione}
-              </p>
-              <a
-                href={offer.pdf_link}
-                download
-                className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-              >
-                <FileDown className="h-3 w-3" />
-                <span>Scarica PDF</span>
-              </a>
+                    {offers.map(offer => (
+                        <div key={offer.id} className="sticky top-0 z-20 bg-muted/50 border-r border-b p-2 h-[7.5rem]">
+                           {/* ... contenuto delle card header ... (invariato) */}
+                           <div className="relative flex flex-col items-center text-center h-full justify-center">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <img src={offer.logo} alt={`${offer.company} Logo`} className="h-5 w-5 rounded-full object-contain border bg-white" />
+                                    <p className="font-bold text-sm text-foreground">{offer.company}</p>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mb-1.5">{offer.policyNumber}</p>
+                                <div className="text-xl font-bold text-foreground mb-1.5">
+                                    {offer.premium_annuale.toLocaleString('de-CH', { style: 'currency', currency: 'CHF', minimumFractionDigits: 2 }).replace('CHF', '').trim()}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Score:</span>
+                                    <ScoreIndicator score={offer.finalScore} />
+                                </div>
+                                <div className="absolute top-1 right-1 flex flex-col gap-1.5">
+                                    {offer.isBestValue && <IconBadge icon={Gem} title="Miglior Rapporto Qualità/Prezzo" colorClass="text-amber-400" bgColorClass="bg-amber-400/20" />}
+                                    {offer.isBestScore && <IconBadge icon={Award} title="Miglior Punteggio" colorClass="text-teal-400" bgColorClass="bg-teal-400/20" />}
+                                    {offer.isBestPrice && <IconBadge icon={Star} title="Miglior Prezzo" colorClass="text-sky-400" bgColorClass="bg-sky-400/20" />}
+                                </div>
+                                <a href={offer.pdf_link} download target="_blank" rel="noopener noreferrer" className="absolute bottom-1 right-1 text-muted-foreground hover:text-primary transition-colors">
+                                    <FileDown className="h-4 w-4" />
+                                </a>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* --- BODY ROWS (invariato) --- */}
+                    {data.categorieCoperture.map(category => (
+                        <React.Fragment key={category.nome}>
+                            <div className="sticky left-0 z-10 bg-muted/50 border-r border-b flex items-center justify-between p-3 h-12">
+                                <h3 className="font-bold text-sm text-foreground">{category.nome}</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleCategory(category.nome)}
+                                    className="text-muted-foreground hover:text-foreground"
+                                    aria-label={`Espandi o collassa la categoria ${category.nome}`}
+                                >
+                                    <ChevronDown className={`h-5 w-5 transition-transform ${openCategories[category.nome] ? 'rotate-180' : ''}`} />
+                                </button>
+                            </div>
+                            {offers.map(offer => (
+                                <div key={offer.id} className={`${macroRowClass} border-r border-b`}>
+                                    <span className="text-xs text-muted-foreground mr-2">Media:</span>
+                                    <ScoreIndicator score={offer.macroScores[category.nome]} />
+                                </div>
+                            ))}
+
+                            {openCategories[category.nome] && category.microCoperture.map(micro => (
+                                <React.Fragment key={micro.id}>
+                                    <div className={`sticky left-0 z-10 bg-background border-r border-b ${microRowClass}`}>
+                                        <span className="font-bold text-xs text-foreground">{micro.nome}</span>
+                                    </div>
+                                    {offers.map(offer => {
+                                        const coverage = offer.coverages[micro.id as keyof typeof offer.coverages];
+                                        return (
+                                            <div key={`${offer.id}-${micro.id}`} className={`bg-background border-r border-b ${microRowClass}`}>
+                                               {/* ... contenuto delle celle ... (invariato) */}
+                                               {coverage && coverage.covered ? (
+                                                    <>
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <Check className="h-4 w-4 text-green-500" />
+                                                            <ScoreIndicator score={coverage.score} />
+                                                        </div>
+                                                        {showDetails && <p className="text-[11px] text-muted-foreground text-center mt-1">{coverage.details}</p>}
+                                                    </>
+                                                ) : (
+                                                    <div className="flex items-center justify-center gap-2 text-center">
+                                                        <X className="h-4 w-4 text-red-500" />
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {coverage?.details || 'Non inclusa'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </React.Fragment>
+                            ))}
+                        </React.Fragment>
+                    ))}
+
+                    {/* --- RIGA FINALE OSSERVAZIONI (invariato) --- */}
+                    <div className="sticky left-0 z-10 bg-muted/50 border-r border-t p-3 h-24 flex items-center">
+                        <h3 className="font-bold text-sm text-foreground">Osservazione Finale</h3>
+                    </div>
+                    {offers.map(offer => (
+                        <div key={offer.id} id={`observation-cell-${offer.id}`} className="bg-muted/50 border-r border-t p-3 h-24 flex flex-col justify-center items-center text-center">
+                            <p className="text-xs text-muted-foreground italic mb-2">{offer.osservazione}</p>
+                            <a href={offer.pdf_link} download className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+                                <FileDown className="h-3 w-3" />
+                                <span>Scarica PDF</span>
+                            </a>
+                        </div>
+                    ))}
+                </div>
             </div>
-          ))}
         </div>
-      </div>
-    </div>
-  );
-}
+    );
+};
