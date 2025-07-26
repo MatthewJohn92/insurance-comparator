@@ -391,7 +391,7 @@ export default function MobileView({
       </div>
 
       <DrawerTrigger asChild>
-        <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center p-4 bg-gradient-to-t from-background via-background/90 to-transparent pointer-events-none">
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center p-4 bg-gradient-to-t from-background via-background/90 to-transparent pointer-events-none md:hidden">
           <div className="w-20 h-2 bg-zinc-300 rounded-full pointer-events-auto cursor-pointer" />
         </div>
       </DrawerTrigger>
