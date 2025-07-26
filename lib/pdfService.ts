@@ -1,55 +1,120 @@
+// lib/pdfService.ts
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import autoTable, { UserOptions } from 'jspdf-autotable';
+import { insuranceData } from '@/app/data/insuranceData';
+
+// --- TIPI DI DATI ---
 export type PrintMode = 'top3' | 'summary' | 'detailed';
 
 export interface OfferForPrint {
-  id: number;
-  company: string;
-  premium_annuale: number;
-  finalScore: number;
-  coverages: Record<string, { covered: boolean; score: number }>;
+    id: number;
+    company: string;
+    premium_annuale: number;
+    finalScore: number;
+    macroScores: { [key: string]: number };
+    coverages: Record<string, { covered: boolean; score: number; details?: string }>;
+    osservazione?: string;
 }
 
-export function generatePdf(mode: PrintMode, offers: OfferForPrint[]) {
-  const orientation = mode === 'top3' ? 'p' : 'landscape';
-  const doc = new jsPDF({ orientation, unit: 'pt', format: 'a4' });
+// --- FUNZIONI HELPER ---
+const addFooter = (doc: jsPDF) => {
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            `Pagina ${i} di ${pageCount}`,
+            doc.internal.pageSize.getWidth() - 40,
+            doc.internal.pageSize.getHeight() - 20,
+            { align: 'right' }
+        );
+        doc.text(
+            `© L+G SA - ${new Date().toLocaleDateString('it-IT')}`,
+            40,
+            doc.internal.pageSize.getHeight() - 20
+        );
+    }
+};
 
-  const titleMap: Record<PrintMode, string> = {
-    top3: 'Top 3 Dettagli',
-    summary: 'Tutte Sintetiche',
-    detailed: 'Tutto Dettagli',
-  };
+const getScoreColor = (score: number): string => {
+    if (score >= 4) return '#15803d'; // Verde Intenso
+    if (score >= 2.5) return '#ca8a04'; // Giallo Intenso
+    return '#dc2626'; // Rosso
+};
 
-  doc.setFontSize(16);
-  doc.text(`Report offerte – ${titleMap[mode]}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
-  const date = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
-  doc.setFontSize(10);
-  doc.text(date, doc.internal.pageSize.getWidth() / 2, 60, { align: 'center' });
+// --- FUNZIONE PRINCIPALE DI GENERAZIONE PDF ---
+export async function generatePdf(mode: PrintMode, offers: OfferForPrint[]) {
+    const orientation = (mode === 'top3') ? 'portrait' : 'landscape';
+    const doc = new jsPDF({ orientation, unit: 'pt', format: 'a4' });
 
-  let rows: (string | number)[][] = [];
+    const headStyles = { fillColor: '#155044', textColor: '#FFFFFF', fontStyle: 'bold', halign: 'center' as const };
+    const macroCategoryStyles = { fontStyle: 'bold', fillColor: '#F3F4F6', textColor: '#000000' };
 
-  if (mode === 'top3') {
-    rows = offers.slice(0, 3).map((o, idx) => [idx + 1, o.company, o.premium_annuale.toFixed(2), o.finalScore.toFixed(1)]);
-    autoTable(doc, {
-      head: [['#', 'Compagnia', 'Premio (CHF)', 'Punteggio']],
-      body: rows,
-      startY: 80,
+    const offersToPrint = mode === 'top3' ? offers.slice(0, 3) : offers;
+
+    const head: UserOptions['head'] = [[]];
+    (head[0] as any[]).push({ content: 'Coperture', styles: { fontStyle: 'bold', halign: 'left' } });
+    
+    offersToPrint.forEach(offer => {
+        (head[0] as any[]).push({
+            content: `${offer.company}\nCHF ${offer.premium_annuale.toFixed(2)}\nScore: ${offer.finalScore.toFixed(1)}`,
+        });
     });
-  } else if (mode === 'summary') {
-    rows = offers.map((o, idx) => [idx + 1, o.company, o.premium_annuale.toFixed(2)]);
-    autoTable(doc, {
-      head: [['#', 'Compagnia', 'Premio (CHF)']],
-      body: rows,
-      startY: 80,
-    });
-  } else {
-    rows = offers.map((o, idx) => [idx + 1, o.company, o.premium_annuale.toFixed(2), Object.keys(o.coverages).join(', ')]);
-    autoTable(doc, {
-      head: [['#', 'Compagnia', 'Premio (CHF)', 'Coperture']],
-      body: rows,
-      startY: 80,
-    });
-  }
+    
+    let body: any[][] = [];
 
-  doc.save('report.pdf');
+    insuranceData.categorieCoperture.forEach(category => {
+        body.push([
+            { content: category.nome, styles: macroCategoryStyles },
+            ...offersToPrint.map(o => ({
+                content: `Media: ${o.macroScores[category.nome].toFixed(1)}`,
+                styles: { ...macroCategoryStyles, halign: 'center' }
+            }))
+        ]);
+
+        if (mode === 'detailed' || mode === 'top3') {
+            category.microCoperture.forEach(micro => {
+                body.push([
+                    { content: micro.nome, styles: { fontSize: 8, fontStyle: 'normal' } },
+                    ...offersToPrint.map(o => {
+                        const coverage = o.coverages[micro.id as keyof typeof o.coverages];
+                        if (coverage?.covered) {
+                            return {
+                                content: `${Math.round(coverage.score)}\n${coverage.details || ''}`,
+                                styles: { textColor: getScoreColor(coverage.score), fontSize: 7, halign: 'center' }
+                            };
+                        }
+                        return { 
+                            content: 'Non inclusa',
+                            styles: { textColor: getScoreColor(0), fontSize: 7, halign: 'center' }
+                        };
+                    })
+                ]);
+            });
+        }
+    });
+    
+    body.push([
+        { content: 'Osservazione Finale', styles: macroCategoryStyles },
+        ...offersToPrint.map(o => ({
+            content: o.osservazione || '-',
+            styles: { ...macroCategoryStyles, fontStyle: 'italic', fontSize: 8 }
+        }))
+    ]);
+    
+    autoTable(doc, {
+        head,
+        body,
+        startY: 40,
+        theme: 'grid',
+        styles: { valign: 'middle', fontSize: 8, cellPadding: 4 },
+        headStyles,
+        columnStyles: {
+            0: { cellWidth: 120, fontStyle: 'bold' }
+        },
+    });
+    
+    addFooter(doc);
+    doc.save(`Report_Assicurazioni_${mode}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
