@@ -11,7 +11,7 @@ import { useTheme } from "next-themes";
 import DesktopView from './DesktopView';
 import MobileView from './MobileView';
 import FilterModal from './FilterModal';
-import { IconBadge, ScoreIndicator } from './ui/custom-components';
+import PrintModal from './PrintModal';
 
 // ... (Componente ThemeToggle rimane invariato)
 const ThemeToggle = () => {
@@ -30,6 +30,7 @@ export default function InsuranceComparisonClient() {
     // ... (Tutti gli hook useState, useRef, useEffect rimangono invariati)
     const [data] = useState(insuranceData);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
+    const [isPrintModalOpen, setPrintModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'full' | 'compact' | 'summary'>('full');
 
     const headerRef = useRef<HTMLElement>(null);
@@ -112,7 +113,7 @@ export default function InsuranceComparisonClient() {
                     <Button onClick={handleViewModeToggle} title={title} variant="outline" size="sm" className={`${color}`}>
                         <Icon size={16} className="m-auto" />
                     </Button>
-                    <Button onClick={() => window.print()} title="Stampa Tabella" variant="outline" size="sm" className="hidden md:block">
+                    <Button onClick={() => setPrintModalOpen(true)} title="Stampa" variant="outline" size="sm" className="hidden md:block">
                         <Printer size={16} />
                     </Button>
                     <Button onClick={() => setFilterModalOpen(true)} title="Filtri" variant="outline" size="sm">
@@ -162,6 +163,7 @@ export default function InsuranceComparisonClient() {
 </footer>
 
             <FilterModal isOpen={isFilterModalOpen} onClose={() => setFilterModalOpen(false)} filters={filters} setFilters={setFilters} data={data} />
+            <PrintModal isOpen={isPrintModalOpen} onClose={() => setPrintModalOpen(false)} offers={sortedOffers} />
         </div>
     );
 }
