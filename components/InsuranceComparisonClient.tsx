@@ -113,7 +113,7 @@ export default function InsuranceComparisonClient() {
                     <Button onClick={handleViewModeToggle} title={title} variant="outline" size="sm" className={`${color}`}>
                         <Icon size={16} className="m-auto" />
                     </Button>
-                    <Button onClick={() => setPrintModalOpen(true)} title="Stampa" variant="outline" size="sm" className="hidden md:block">
+                    <Button onClick={() => setPrintModalOpen(true)} title="Stampa" variant="outline" size="sm">
                         <Printer size={16} />
                     </Button>
                     <Button onClick={() => setFilterModalOpen(true)} title="Filtri" variant="outline" size="sm">

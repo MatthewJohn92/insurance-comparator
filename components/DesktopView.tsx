@@ -106,12 +106,12 @@ export default function DesktopView({ data, offers, viewMode, tableTopOffset, fo
                     onMouseUp={handleMouseUp}
                     onMouseMove={handleMouseMove}
                 >
-                    <div className="sticky top-0 left-0 z-30 bg-sidebar-foreground border-r border-b flex flex-col items-center justify-center p-3 text-center h-[7.5rem]">
-                        <Car className="h-7 w-7 text-background mb-1" />
-                        <p className="text-xs font-bold text-background leading-tight">{data.cliente.prodotto}</p>
+                    <div className="sticky top-0 left-0 z-30 bg-[#155044] border-r border-b flex flex-col items-center justify-center p-3 text-center h-[7.5rem]">
+                        <Car className="h-7 w-7 text-white mb-1" />
+                        <p className="text-xs font-bold text-white leading-tight">{data.cliente.prodotto}</p>
                         <div className="flex items-center gap-1.5 mt-2">
-                            <User className="h-3 w-3 text-background" />
-                            <p className="text-xs text-muted">{data.cliente.nome}</p>
+                            <User className="h-3 w-3 text-white" />
+                            <p className="text-xs text-gray-50">{data.cliente.nome}</p>
                         </div>
                     </div>
                     {offers.map(offer => (
