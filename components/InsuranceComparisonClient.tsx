@@ -9,9 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from "next-themes";
 import FilterModal from './FilterModal';
 import PrintModal from './PrintModal';
-import ComparisonView from './ComparisonView'; // <-- NUOVO: Importa la vista unificata
+import ComparisonView from './ComparisonView';
 
-// Importiamo il nostro tipo di dato
 import type { InsuranceData } from '@/app/data/insuranceData';
 
 const ThemeToggle = () => {
@@ -54,13 +53,24 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
         priceRange: [0, maxPremium] as [number, number],
         scoreRange: [0, 100] as [number, number],
         selectedCoverages: [] as string[],
-        searchTerm: '',
+        selectedCompanies: [] as string[],
     });
     
     const { sortedOffers } = useComparisonLogic(data, filters);
     
+    // --- MODIFICA #1: Calcoliamo le categorie filtrate qui ---
+    const displayedCategories = useMemo(() => {
+        const { selectedCoverages } = filters;
+        if (selectedCoverages.length === 0) {
+            return data.categorieCoperture;
+        }
+        return data.categorieCoperture
+            .map(c => ({ ...c, microCoperture: c.microCoperture.filter(m => selectedCoverages.includes(m.id)) }))
+            .filter(c => c.microCoperture.length > 0);
+    }, [data.categorieCoperture, filters]);
+    
     const areFiltersActive = useMemo(() => {
-        return filters.searchTerm !== '' ||
+        return filters.selectedCompanies.length > 0 ||
                filters.priceRange[1] < maxPremium ||
                filters.scoreRange[0] > 0 ||
                filters.selectedCoverages.length > 0;
@@ -131,6 +141,7 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
                         footerHeight={footerHeight}
                         setViewMode={setViewMode}
                         filters={filters}
+                        displayedCategories={displayedCategories} // <-- MODIFICA #2: Passiamo la prop
                     />
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center p-10 h-full">
@@ -149,7 +160,12 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
             </footer>
 
             <FilterModal isOpen={isFilterModalOpen} onClose={() => setFilterModalOpen(false)} filters={filters} setFilters={setFilters} data={data} />
-            <PrintModal isOpen={isPrintModalOpen} onClose={() => setPrintModalOpen(false)} offers={sortedOffers} />
+            <PrintModal 
+                isOpen={isPrintModalOpen} 
+                onClose={() => setPrintModalOpen(false)} 
+                offers={sortedOffers} 
+                displayedCategories={displayedCategories} // <-- MODIFICA #2: Passiamo la prop
+            />
         </div>
     );
 }

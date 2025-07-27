@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from '@/components/ui/label';
-import { insuranceData } from '@/app/data/insuranceData';
-type InsuranceData = typeof insuranceData;
+import type { InsuranceData } from '@/app/data/insuranceData';
 
+// --- MODIFICA #1: Aggiornamento dell'interfaccia dei filtri ---
 interface FiltersState {
     priceRange: [number, number];
     scoreRange: [number, number];
     selectedCoverages: string[];
-    searchTerm: string;
+    selectedCompanies: string[]; // Sostituisce searchTerm
 }
 
 interface FilterModalProps {
@@ -28,13 +28,14 @@ interface FilterModalProps {
 }
 
 export default function FilterModal({ isOpen, onClose, filters, setFilters, data }: FilterModalProps) {
-    // 👇 1. Aggiunto nuovo stato per la ricerca delle coperture
     const [coverageSearchTerm, setCoverageSearchTerm] = useState('');
+
+    // Otteniamo una lista unica di tutte le compagnie per generare le checkbox
+    const allCompanies = useMemo(() => [...new Set(data.offerte.map(o => o.company))].sort(), [data.offerte]);
 
     const allMicroCoverages = useMemo(() => data.categorieCoperture.flatMap(cat => cat.microCoperture), [data]);
     const maxPremium = useMemo(() => Math.ceil(Math.max(...data.offerte.map(o => o.premium_annuale)) / 10) * 10, [data.offerte]);
 
-    // 👇 2. Nuova logica per filtrare le coperture in base alla ricerca
     const filteredMicroCoverages = useMemo(() => {
         if (!coverageSearchTerm) {
             return allMicroCoverages;
@@ -44,24 +45,40 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
         );
     }, [allMicroCoverages, coverageSearchTerm]);
 
-    const handleCheckboxChange = (covId: string) => {
-        const newSelection = new Set(filters.selectedCoverages);
-        if (newSelection.has(covId)) {
-            newSelection.delete(covId);
-        } else {
-            newSelection.add(covId);
-        }
-        setFilters(prev => ({ ...prev, selectedCoverages: Array.from(newSelection) }));
+    // --- MODIFICA #2: Nuova funzione per gestire la selezione delle compagnie ---
+    const handleCompanyCheckboxChange = (companyName: string) => {
+        setFilters(prev => {
+            const newSelection = new Set(prev.selectedCompanies);
+            if (newSelection.has(companyName)) {
+                newSelection.delete(companyName);
+            } else {
+                newSelection.add(companyName);
+            }
+            return { ...prev, selectedCompanies: Array.from(newSelection) };
+        });
+    };
+
+    const handleCoverageCheckboxChange = (covId: string) => {
+        setFilters(prev => {
+            const newSelection = new Set(prev.selectedCoverages);
+            if (newSelection.has(covId)) {
+                newSelection.delete(covId);
+            } else {
+                newSelection.add(covId);
+            }
+            return { ...prev, selectedCoverages: Array.from(newSelection) };
+        });
     };
     
+    // --- MODIFICA #3: Aggiornamento della funzione di reset ---
     const resetFilters = () => {
         setFilters({
             priceRange: [0, maxPremium],
             scoreRange: [0, 100],
             selectedCoverages: [],
-            searchTerm: '',
+            selectedCompanies: [], // Resetta l'array delle compagnie
         });
-        setCoverageSearchTerm(''); // Resetta anche la ricerca coperture
+        setCoverageSearchTerm('');
     };
 
     if (!isOpen) return null;
@@ -71,26 +88,28 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
             <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col no-print">
                 <DialogHeader>
                     <DialogTitle className="text-2xl">Filtra Offerte</DialogTitle>
-                    <DialogDescription>Affina la tua ricerca per trovare offerta perfetta.</DialogDescription>
+                    <DialogDescription>Affina la tua ricerca per trovare l'offerta perfetta.</DialogDescription>
                 </DialogHeader>
 
                 <div className="p-1 pr-3 flex-grow overflow-y-auto space-y-6">
-                    {/* Search Input per Compagnia */}
+                    {/* --- MODIFICA #4: Sostituzione dell'input con le checkbox delle compagnie --- */}
                     <div>
-                        <Label className="text-base font-semibold">Cerca per compagnia</Label>
-                        <div className="relative mt-2">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input
-                                type="text"
-                                value={filters.searchTerm}
-                                onChange={e => setFilters(f => ({ ...f, searchTerm: e.target.value }))}
-                                placeholder="Es. AXA, Zurich..."
-                                className="pl-10"
-                            />
+                        <Label className="text-base font-semibold">Seleziona compagnie</Label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 mt-2 p-3 border rounded-md">
+                            {allCompanies.map(company => (
+                                <div key={company} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`company-${company}`}
+                                        checked={filters.selectedCompanies.includes(company)}
+                                        onCheckedChange={() => handleCompanyCheckboxChange(company)}
+                                    />
+                                    <Label htmlFor={`company-${company}`} className="font-normal cursor-pointer">{company}</Label>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Sliders */}
+                    {/* Sezione Sliders (invariata) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                         <div>
                             <Label htmlFor="price-slider" className="text-base font-semibold">Premio Annuale (max)</Label>
@@ -124,11 +143,9 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
                         </div>
                     </div>
 
-                    {/* Checkboxes per Coperture */}
+                    {/* Sezione Coperture (invariata) */}
                     <div className="space-y-4">
                         <Label className="text-base font-semibold">Coperture Essenziali</Label>
-                        
-                        {/* 👇 3. Aggiunto nuovo campo di ricerca per le coperture 👇 */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                             <Input
@@ -139,15 +156,13 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
                                 className="pl-10"
                             />
                         </div>
-
-                        {/* 👇 4. La lista ora usa le coperture filtrate 👇 */}
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 max-h-60 overflow-y-auto p-3 border rounded-md">
                             {filteredMicroCoverages.map(cov => (
                                 <div key={cov.id} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={cov.id}
                                         checked={filters.selectedCoverages.includes(cov.id)}
-                                        onCheckedChange={() => handleCheckboxChange(cov.id)}
+                                        onCheckedChange={() => handleCoverageCheckboxChange(cov.id)}
                                     />
                                     <Label htmlFor={cov.id} className="font-normal cursor-pointer">{cov.nome}</Label>
                                 </div>

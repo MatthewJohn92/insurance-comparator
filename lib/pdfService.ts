@@ -2,9 +2,12 @@
 import jsPDF from 'jspdf';
 import autoTable, { UserOptions } from 'jspdf-autotable';
 import { insuranceData } from '@/app/data/insuranceData';
+import type { Category } from '@/app/data/insuranceData';
 
 // --- TIPI DI DATI ---
-export type PrintMode = 'top3' | 'summary' | 'detailed';
+
+// MODIFICA #1: Aggiunta della nuova modalità 'filtered'
+export type PrintMode = 'top3' | 'summary' | 'detailed' | 'filtered';
 
 export interface OfferForPrint {
     id: number;
@@ -16,7 +19,7 @@ export interface OfferForPrint {
     osservazione?: string;
 }
 
-// --- FUNZIONI HELPER ---
+// --- FUNZIONI HELPER (invariate) ---
 const addFooter = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -44,14 +47,23 @@ const getScoreColor = (score: number): string => {
 };
 
 // --- FUNZIONE PRINCIPALE DI GENERAZIONE PDF ---
-export async function generatePdf(mode: PrintMode, offers: OfferForPrint[]) {
-    const orientation = (mode === 'top3') ? 'portrait' : 'landscape';
+
+// MODIFICA #2: La funzione ora accetta un parametro opzionale `categoriesToPrint`
+export async function generatePdf(
+    mode: PrintMode,
+    offers: OfferForPrint[],
+    categoriesToPrint?: Category[]
+) {
+    const orientation = (mode === 'top3' || mode === 'filtered') ? 'portrait' : 'landscape';
     const doc = new jsPDF({ orientation, unit: 'pt', format: 'a4' });
 
     const headStyles = { fillColor: '#155044', textColor: '#FFFFFF', fontStyle: 'bold', halign: 'center' as const };
     const macroCategoryStyles = { fontStyle: 'bold', fillColor: '#F3F4F6', textColor: '#000000' };
 
     const offersToPrint = mode === 'top3' ? offers.slice(0, 3) : offers;
+    
+    // Se le categorie filtrate sono fornite, usiamo quelle, altrimenti tutte.
+    const categories = categoriesToPrint || insuranceData.categorieCoperture;
 
     const head: UserOptions['head'] = [[]];
     (head[0] as any[]).push({ content: 'Coperture', styles: { fontStyle: 'bold', halign: 'left' } });
@@ -64,7 +76,7 @@ export async function generatePdf(mode: PrintMode, offers: OfferForPrint[]) {
     
     let body: any[][] = [];
 
-    insuranceData.categorieCoperture.forEach(category => {
+    categories.forEach(category => {
         body.push([
             { content: category.nome, styles: macroCategoryStyles },
             ...offersToPrint.map(o => ({
@@ -73,7 +85,8 @@ export async function generatePdf(mode: PrintMode, offers: OfferForPrint[]) {
             }))
         ]);
 
-        if (mode === 'detailed' || mode === 'top3') {
+        // MODIFICA #3: Aggiunta la modalità 'filtered' alla condizione
+        if (mode === 'detailed' || mode === 'top3' || mode === 'filtered') {
             category.microCoperture.forEach(micro => {
                 body.push([
                     { content: micro.nome, styles: { fontSize: 8, fontStyle: 'normal' } },

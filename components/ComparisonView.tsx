@@ -18,6 +18,7 @@ import { DesktopHeaderRow } from './comparison/DesktopHeaderRow';
 
 type OfferWithScores = ReturnType<typeof useComparisonLogic>['sortedOffers'][number];
 
+// --- MODIFICA #1: Aggiorniamo le props per ricevere le categorie filtrate ---
 interface ComparisonViewProps {
   data: InsuranceData;
   offers: OfferWithScores[];
@@ -26,9 +27,10 @@ interface ComparisonViewProps {
   footerHeight: number;
   setViewMode: (mode: 'full' | 'compact' | 'summary') => void;
   filters: { selectedCoverages: string[] };
+  displayedCategories: Category[]; // Prop aggiunta
 }
 
-// === SOTTO-COMPONENTI PER LA VISTA MOBILE ===
+// === SOTTO-COMPONENTI PER LA VISTA MOBILE (invariati) ===
 const MobileOfferNavigator: React.FC<{ offers: OfferWithScores[]; visibleOfferId: number | null; onNavigate: (id: number) => void; }> = ({ offers, visibleOfferId, onNavigate }) => {
     const navRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -66,7 +68,7 @@ const MobileVisibleOfferHeader: React.FC<{ offer: OfferWithScores | undefined; c
 
 
 // === COMPONENTE PRINCIPALE UNIFICATO ===
-export default function ComparisonView({ data, offers, viewMode, tableTopOffset, footerHeight, setViewMode, filters }: ComparisonViewProps) {
+export default function ComparisonView({ data, offers, viewMode, tableTopOffset, footerHeight, setViewMode, filters, displayedCategories }: ComparisonViewProps) {
     const isMobile = useIsMobile();
     const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
     
@@ -92,14 +94,9 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
     const startX = useRef(0);
     const scrollLeft = useRef(0);
     
-    const displayedCategories = useMemo(() => {
-        const { selectedCoverages } = filters;
-        if (selectedCoverages.length === 0) return data.categorieCoperture;
-        return data.categorieCoperture
-            .map(c => ({ ...c, microCoperture: c.microCoperture.filter(m => selectedCoverages.includes(m.id)) }))
-            .filter(c => c.microCoperture.length > 0);
-    }, [data.categorieCoperture, filters]);
-    
+    // --- MODIFICA #2: Rimuoviamo il calcolo di `displayedCategories` da qui ---
+    // const displayedCategories = useMemo(() => { ... }); // RIMOSSO
+
     const visibleOffer = useMemo(() => offers.find((o) => o.id === visibleOfferId), [offers, visibleOfferId]);
 
     useEffect(() => {
@@ -142,9 +139,6 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
 
     if (isMobile === undefined) return null;
     
-    // =================================================================
-    // = RENDERIZZAZIONE MOBILE
-    // =================================================================
     if (isMobile) {
         return (
             <Drawer>
@@ -198,22 +192,17 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
                         <DrawerDescription className="pt-2">{visibleOffer?.osservazione}</DrawerDescription>
                     </DrawerHeader>
                     <DrawerFooter>
-                        {/* === MODIFICA QUI === */}
                         <Button asChild className="bg-[#155044] text-white hover:bg-[#155044]/90">
                             <a href={visibleOffer?.pdf_link} target="_blank" rel="noopener noreferrer">
                                 <FileDown className="mr-2 h-4 w-4" />Scarica Offerta PDF
                             </a>
                         </Button>
-                        {/* === FINE MODIFICA === */}
                     </DrawerFooter>
                 </DrawerContent>
             </Drawer>
         );
     }
 
-    // =================================================================
-    // = RENDERIZZAZIONE DESKTOP
-    // =================================================================
     return (
         <div className="hidden md:block" id="print-area">
              <div ref={desktopScrollContainerRef} className="overflow-x-auto scrollbar-hide"
@@ -232,7 +221,7 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
                         <React.Fragment key={category.nome}>
                             <div className="sticky left-0 z-10 bg-muted border-b border-r flex items-center justify-between p-3 h-12">
                                 <h3 className="font-bold text-sm text-foreground">{category.nome}</h3>
-                                <button type="button" onClick={() => toggleCategory(category.nome)} className="text-muted-foreground hover:text-foreground" title={openCategories[category.nome] ? `Comprimi ${category.nome}` : `Espandi ${category.nome}`}>
+                                <button type="button" onClick={() => toggleCategory(category.nome)} className="text-muted-foreground hover:text-foreground" title={`Toggle ${category.nome}`}>
                                     <ChevronDown className={`h-5 w-5 transition-transform ${openCategories[category.nome] ? 'rotate-180' : ''}`} />
                                 </button>
                             </div>
