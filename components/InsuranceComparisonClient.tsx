@@ -7,12 +7,11 @@ import useComparisonLogic from '@/hooks/useComparisonLogic';
 import { SlidersHorizontal, Moon, Sun, Printer, PanelTopOpen, PanelTopClose, ListCollapse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from "next-themes";
-import DesktopView from './DesktopView';
-import MobileView from './MobileView';
 import FilterModal from './FilterModal';
 import PrintModal from './PrintModal';
+import ComparisonView from './ComparisonView'; // <-- NUOVO: Importa la vista unificata
 
-// Importiamo il nostro nuovo e pulito tipo 'InsuranceData'
+// Importiamo il nostro tipo di dato
 import type { InsuranceData } from '@/app/data/insuranceData';
 
 const ThemeToggle = () => {
@@ -26,7 +25,6 @@ const ThemeToggle = () => {
     );
 };
 
-// Usiamo il tipo 'InsuranceData' per definire le props
 export default function InsuranceComparisonClient({ initialData }: { initialData: InsuranceData }) {
     const [data] = useState(initialData);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
@@ -58,9 +56,9 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
         selectedCoverages: [] as string[],
         searchTerm: '',
     });
-
+    
     const { sortedOffers } = useComparisonLogic(data, filters);
-
+    
     const areFiltersActive = useMemo(() => {
         return filters.searchTerm !== '' ||
                filters.priceRange[1] < maxPremium ||
@@ -85,7 +83,7 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
     }, [handleScroll]);
 
     const tableTopOffset = isHeaderVisible ? (headerRef.current?.offsetHeight || 0) : 0;
-
+    
     const handleViewModeToggle = () => {
         const modes = ['full', 'compact', 'summary'];
         const currentIndex = modes.indexOf(viewMode);
@@ -125,23 +123,15 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
 
             <main className="flex-grow">
                 {sortedOffers.length > 0 ? (
-                    <>
-                        <DesktopView 
-                            data={data} 
-                            offers={sortedOffers} 
-                            viewMode={viewMode} 
-                            tableTopOffset={tableTopOffset} 
-                            footerHeight={footerHeight}
-                            setViewMode={setViewMode}
-                            filters={filters}
-                        />
-                        <MobileView 
-                            data={data} 
-                            offers={sortedOffers} 
-                            filters={filters}
-                            viewMode={viewMode}
-                        />
-                    </>
+                    <ComparisonView
+                        data={data}
+                        offers={sortedOffers}
+                        viewMode={viewMode}
+                        tableTopOffset={tableTopOffset}
+                        footerHeight={footerHeight}
+                        setViewMode={setViewMode}
+                        filters={filters}
+                    />
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center p-10 h-full">
                         <p className="text-xl font-semibold">Nessuna offerta trovata</p>
@@ -153,7 +143,7 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
                     </div>
                 )}
             </main>
-
+            
             <footer ref={footerRef} className="text-center p-4 text-xs text-muted-foreground no-print hidden md:block">
                 copyright L+G SA Matteo Luca
             </footer>
