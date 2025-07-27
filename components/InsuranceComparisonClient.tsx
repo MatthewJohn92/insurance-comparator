@@ -3,7 +3,6 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { insuranceData } from '@/app/data/insuranceData';
 import useComparisonLogic from '@/hooks/useComparisonLogic';
 import { SlidersHorizontal, Moon, Sun, Printer, PanelTopOpen, PanelTopClose, ListCollapse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,9 @@ import MobileView from './MobileView';
 import FilterModal from './FilterModal';
 import PrintModal from './PrintModal';
 
-// ... (Componente ThemeToggle rimane invariato)
+// Importiamo il nostro nuovo e pulito tipo 'InsuranceData'
+import type { InsuranceData } from '@/app/data/insuranceData';
+
 const ThemeToggle = () => {
     const { theme, setTheme } = useTheme();
     return (
@@ -25,10 +26,9 @@ const ThemeToggle = () => {
     );
 };
 
-
-export default function InsuranceComparisonClient() {
-    // ... (Tutti gli hook useState, useRef, useEffect rimangono invariati)
-    const [data] = useState(insuranceData);
+// Usiamo il tipo 'InsuranceData' per definire le props
+export default function InsuranceComparisonClient({ initialData }: { initialData: InsuranceData }) {
+    const [data] = useState(initialData);
     const [isFilterModalOpen, setFilterModalOpen] = useState(false);
     const [isPrintModalOpen, setPrintModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'full' | 'compact' | 'summary'>('full');
@@ -58,9 +58,9 @@ export default function InsuranceComparisonClient() {
         selectedCoverages: [] as string[],
         searchTerm: '',
     });
-    
+
     const { sortedOffers } = useComparisonLogic(data, filters);
-    
+
     const areFiltersActive = useMemo(() => {
         return filters.searchTerm !== '' ||
                filters.priceRange[1] < maxPremium ||
@@ -85,7 +85,7 @@ export default function InsuranceComparisonClient() {
     }, [handleScroll]);
 
     const tableTopOffset = isHeaderVisible ? (headerRef.current?.offsetHeight || 0) : 0;
-    
+
     const handleViewModeToggle = () => {
         const modes = ['full', 'compact', 'summary'];
         const currentIndex = modes.indexOf(viewMode);
@@ -131,7 +131,6 @@ export default function InsuranceComparisonClient() {
                             offers={sortedOffers} 
                             viewMode={viewMode} 
                             tableTopOffset={tableTopOffset} 
-                            // 👇 Passiamo l'altezza del footer qui
                             footerHeight={footerHeight}
                             setViewMode={setViewMode}
                             filters={filters}
@@ -141,12 +140,9 @@ export default function InsuranceComparisonClient() {
                             offers={sortedOffers} 
                             filters={filters}
                             viewMode={viewMode}
-                            // 👇 Passiamo l'altezza del footer qui
-                            
                         />
                     </>
                 ) : (
-                    // ... (blocco "Nessuna offerta trovata" invariato)
                     <div className="flex flex-col items-center justify-center text-center p-10 h-full">
                         <p className="text-xl font-semibold">Nessuna offerta trovata</p>
                         <p className="text-muted-foreground mt-2">Prova a modificare i filtri per trovare più risultati.</p>
@@ -157,10 +153,10 @@ export default function InsuranceComparisonClient() {
                     </div>
                 )}
             </main>
-            
-<footer ref={footerRef} className="text-center p-4 text-xs text-muted-foreground no-print hidden md:block">
-    copyright L+G SA Matteo Luca
-</footer>
+
+            <footer ref={footerRef} className="text-center p-4 text-xs text-muted-foreground no-print hidden md:block">
+                copyright L+G SA Matteo Luca
+            </footer>
 
             <FilterModal isOpen={isFilterModalOpen} onClose={() => setFilterModalOpen(false)} filters={filters} setFilters={setFilters} data={data} />
             <PrintModal isOpen={isPrintModalOpen} onClose={() => setPrintModalOpen(false)} offers={sortedOffers} />
