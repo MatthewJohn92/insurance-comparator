@@ -9,14 +9,14 @@ type InsuranceData = typeof insuranceData;
 type Offer = InsuranceData['offerte'][0];
 type Category = InsuranceData['categorieCoperture'][0];
 
+// --- MODIFICA #1: Aggiornamento dell'interfaccia dei filtri ---
 interface Filters {
     priceRange: [number, number];
     scoreRange: [number, number];
     selectedCoverages: string[];
-    searchTerm: string;
+    selectedCompanies: string[]; // Sostituisce searchTerm
 }
 
-// L'hook è identico a quello originale, ma con l'aggiunta dei tipi per `data` e `filters`
 const useComparisonLogic = (data: InsuranceData, filters: Filters) => {
     return useMemo(() => {
         const { offerte, categorieCoperture } = data;
@@ -44,27 +44,24 @@ const useComparisonLogic = (data: InsuranceData, filters: Filters) => {
         
          // 2. Applicazione filtri
         const filteredOffers = offersWithScores.filter(offer => {
-            const { priceRange, scoreRange, selectedCoverages, searchTerm } = filters;
+            // Aggiorniamo le variabili destrutturate
+            const { priceRange, scoreRange, selectedCoverages, selectedCompanies } = filters;
 
             if (offer.premium_annuale < priceRange[0] || offer.premium_annuale > priceRange[1]) return false;
             if (offer.averageMicroScore * 20 < scoreRange[0] || offer.averageMicroScore * 20 > scoreRange[1]) return false;
             
-            if (searchTerm && !offer.company.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+            // --- MODIFICA #2: Nuova logica di filtro per le compagnie ---
+            // Se ci sono compagnie selezionate e la compagnia dell'offerta non è tra quelle, la scartiamo.
+            if (selectedCompanies.length > 0 && !selectedCompanies.includes(offer.company)) {
+                return false;
+            }
 
-            // --- SEZIONE CORRETTA ---
             for (const covId of selectedCoverages) {
-                // Accediamo alla copertura specifica usando l'ID.
-                // L'assertion 'as keyof typeof offer.coverages' dice a TypeScript di fidarsi che
-                // covId è una chiave valida dell'oggetto coverages.
                 const coverage = offer.coverages[covId as keyof typeof offer.coverages];
-                
-                // Se la copertura non esiste (undefined) o se la sua proprietà .covered è false.
-            
                 if (!coverage || !coverage.covered) {
                     return false;
                 }
             }
-            // --- FINE SEZIONE CORRETTA ---
 
             return true;
         });
