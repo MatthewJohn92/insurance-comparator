@@ -29,17 +29,13 @@ describe('PDF Generation Logic', () => {
     it('should create a header row with "Coperture" and each offer', () => {
       const header = generateTableHeader(testOffers);
       
-      // Ci aspettiamo un array con una riga
       expect(header).toHaveLength(1);
       
-      // La riga dovrebbe avere 1 colonna per le coperture + 1 per ogni offerta
       const headerRow = header[0] as any[];
       expect(headerRow).toHaveLength(testOffers.length + 1);
       
-      // Il primo elemento deve essere la colonna delle coperture
       expect(headerRow[0].content).toBe('Coperture');
       
-      // Il secondo elemento deve contenere le info della prima offerta (Zurich)
       expect(headerRow[1].content).toContain('Zurich');
       expect(headerRow[1].content).toContain('CHF 886.80');
     });
@@ -49,8 +45,9 @@ describe('PDF Generation Logic', () => {
     it('should generate a detailed body for "top3" mode', () => {
       const body = generateTableBody(testOffers, testCategories, 'top3');
       
-      // Ci deve essere una riga per la Variante, una per ogni categoria, e una per ogni micro-copertura
-      const expectedRows = 1 (Variante) + testCategories.length * (1 + testCategories[0].microCoperture.length) + 1 (Osservazione);
+      // Calcolo corretto delle righe attese
+      // 1 (Variante) + (N. Categorie * (1 riga per categoria + N. micro-coperture per categoria)) + 1 (Osservazione)
+      const expectedRows = 1 + testCategories.reduce((acc, cat) => acc + 1 + cat.microCoperture.length, 0) + 1;
       expect(body.length).toBe(expectedRows);
 
       // Controlliamo che una cella di dettaglio contenga le informazioni corrette
@@ -63,19 +60,18 @@ describe('PDF Generation Logic', () => {
     it('should generate a summary body for "summary" mode', () => {
       const body = generateTableBody(testOffers, testCategories, 'summary');
       
-      // In modalità summary, ci sono solo la riga Variante, le righe delle macro-categorie e l'osservazione
-      const expectedRows = 1 (Variante) + testCategories.length + 1 (Osservazione);
+      // Calcolo corretto delle righe attese
+      // 1 (Variante) + N. Categorie + 1 (Osservazione)
+      const expectedRows = 1 + testCategories.length + 1;
       expect(body.length).toBe(expectedRows);
     });
 
     it('should handle non-covered items correctly', () => {
-       // Aggiungiamo un'offerta che sappiamo non avere una copertura specifica
        const offerWithoutVandalism = testOffers[0]; // Zurich non ha 'cp_vandalismo'
        const categoryWithVandalism = insuranceData.categorieCoperture.find(c => c.nome === 'Casco parziale');
        
        const body = generateTableBody([offerWithoutVandalism], [categoryWithVandalism!], 'detailed');
 
-       // Troviamo la riga corrispondente a 'Atti vandalici non dolosi'
        const vandalismRow = body.find(row => (row[0] as any).content === 'Atti vandalici non dolosi');
        expect(vandalismRow).toBeDefined();
 
