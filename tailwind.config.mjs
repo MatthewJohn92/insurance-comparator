@@ -20,7 +20,7 @@ const config = {
     },
     extend: {
       colors: {
-        brand: '#155044', // Il tuo colore personalizzato
+        brand: '#155044',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -72,10 +72,17 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        // <-- MODIFICA: Rimuoviamo la vecchia animazione e aggiungiamo quella per la rotazione -->
+        "spin": {
+            from: { transform: "rotate(0deg)" },
+            to: { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        // <-- MODIFICA: Aggiungiamo l'utility per l'animazione di spin -->
+        "spin": "spin 1s linear infinite",
       },
     },
   },
