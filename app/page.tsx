@@ -1,11 +1,13 @@
 // app/page.tsx
 import InsuranceComparisonClient from "@/components/InsuranceComparisonClient";
-
-// Modifichiamo l'import per usare il nostro nuovo tipo 'InsuranceData'
 import type { InsuranceData } from "@/app/data/insuranceData";
 
 async function getInsuranceData(): Promise<InsuranceData> {
-  const res = await fetch('http://localhost:3000/api/insurances', {
+  // <-- MODIFICA: Usiamo la variabile d'ambiente per l'URL -->
+  // Questo rende la chiamata più robusta e pronta per la produzione.
+  const apiUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/insurances`;
+
+  const res = await fetch(apiUrl, {
     cache: 'no-store',
   });
 
@@ -13,7 +15,6 @@ async function getInsuranceData(): Promise<InsuranceData> {
     throw new Error('Errore durante il recupero dei dati assicurativi');
   }
 
-  // Usiamo il nostro tipo per garantire che i dati corrispondano
   const data: InsuranceData = await res.json();
   return data;
 }

@@ -1,22 +1,31 @@
 // app/api/insurances/route.ts
-
 import { NextResponse } from 'next/server';
 import { insuranceData } from '@/app/data/insuranceData';
 
-
 export async function GET() {
-  // --- Simulazione e Logica Futura ---
-  // In un'applicazione reale, qui effettueresti una chiamata a un database
-  // o a un servizio esterno per recuperare i dati.
-  // Per ora, continuiamo a usare i nostri dati statici.
+  /* console.log("Fetching insurance data..."); */
 
-  // Aggiungiamo un piccolo ritardo artificiale di 500 millisecondi (mezzo secondo)
-  // per simulare il tempo che impiegherebbe una vera chiamata di rete.
-  // Questo ci aiuterà a vedere gli stati di caricamento in futuro.
+  // Ritardo di 2 secondi per vedere bene lo skeleton di caricamento.
+  //TODO: Rimuovere in produzione.
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  // --- SIMULAZIONE ERRORE ---
   
-  await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Usiamo NextResponse.json() per restituire i nostri dati assicurativi
-  // in formato JSON, con uno status code HTTP 200 (OK).
+  // Aggiungiamo una probabilità del 50% di generare un errore.
+  // In produzione, rimuoverai questa logica.
+ /*  if (Math.random() > 0.5) {
+    console.error("Simulating a server error."); // Restituendo uno status 500, attiveremo il componente `error.tsx`.
+    return NextResponse.json(
+      { message: "Errore simulato dal server." },
+      { status: 500 }
+    );
+  }
+ */
+  // Se non si verifica l'errore, restituisci i dati come prima.
   return NextResponse.json(insuranceData);
 }
+
+// Nota: per forzare l'errore in `page.tsx` che usa `fetch`,
+// dobbiamo lanciare un'eccezione, non solo restituire uno status 500.
+// Modifichiamo il `page.tsx` per gestire questo.

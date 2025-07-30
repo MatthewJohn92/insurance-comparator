@@ -1,6 +1,8 @@
 // components/InsuranceComparisonClient.tsx
 'use client';
 
+// <-- MODIFICA 1: Aggiunti gli hook per la gestione dell'URL -->
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import useComparisonLogic from '@/hooks/useComparisonLogic';
@@ -36,29 +38,53 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
     const [footerHeight, setFooterHeight] = useState(0);
     const lastScrollY = useRef(0);
 
-    useEffect(() => {
-        const measureFooter = () => {
-            if (footerRef.current) {
-                setFooterHeight(footerRef.current.offsetHeight);
-            }
-        };
-        measureFooter();
-        window.addEventListener('resize', measureFooter);
-        return () => window.removeEventListener('resize', measureFooter);
-    }, []);
+    // <-- MODIFICA 2: Inizializzazione degli hook per l'URL -->
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     const maxPremium = useMemo(() => Math.max(...data.offerte.map(o => o.premium_annuale)), [data.offerte]);
 
+    // <-- MODIFICA 3: Lo stato dei filtri viene ora inizializzato leggendo i parametri dall'URL -->
+    // Se un parametro non è presente nell'URL, viene usato un valore di default.
     const [filters, setFilters] = useState({
-        priceRange: [0, maxPremium] as [number, number],
-        scoreRange: [0, 100] as [number, number],
-        selectedCoverages: [] as string[],
-        selectedCompanies: [] as string[],
+        priceRange: [0, Number(searchParams.get('maxPrice')) || maxPremium] as [number, number],
+        scoreRange: [Number(searchParams.get('minScore')) || 0, 100] as [number, number],
+        selectedCoverages: searchParams.get('coverages')?.split(',') || [],
+        selectedCompanies: searchParams.get('companies')?.split(',') || [],
     });
-    
+
+    // <-- MODIFICA 4: Aggiunto un useEffect per aggiornare l'URL quando i filtri cambiano -->
+    useEffect(() => {
+        // Creiamo un nuovo oggetto URLSearchParams per costruire la query string.
+        const params = new URLSearchParams();
+
+        // Aggiungiamo i parametri all'URL solo se sono diversi dai valori di default per mantenerlo pulito.
+        if (filters.priceRange[1] < maxPremium) {
+            params.set('maxPrice', filters.priceRange[1].toString());
+        }
+        if (filters.scoreRange[0] > 0) {
+            params.set('minScore', filters.scoreRange[0].toString());
+        }
+        if (filters.selectedCompanies.length > 0) {
+            params.set('companies', filters.selectedCompanies.join(','));
+        }
+        if (filters.selectedCoverages.length > 0) {
+            params.set('coverages', filters.selectedCoverages.join(','));
+        }
+        
+        // Trasformiamo i parametri in una stringa (es. "maxPrice=950&companies=AXA")
+        const queryString = params.toString();
+
+        // Usiamo router.replace per aggiornare l'URL. Questo non ricarica la pagina e non
+        // crea una nuova voce nella cronologia del browser, permettendo un'esperienza fluida.
+        router.replace(`${pathname}${queryString ? `?${queryString}` : ''}`, { scroll: false });
+
+    }, [filters, pathname, router, maxPremium]); // Questo effetto si attiva ogni volta che i filtri cambiano.
+
+
     const { sortedOffers } = useComparisonLogic(data, filters);
     
-    // --- MODIFICA #1: Calcoliamo le categorie filtrate qui ---
     const displayedCategories = useMemo(() => {
         const { selectedCoverages } = filters;
         if (selectedCoverages.length === 0) {
@@ -86,6 +112,18 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
         }
         lastScrollY.current = currentScrollY;
     }, []);
+
+    useEffect(() => {
+        const measureFooter = () => {
+            if (footerRef.current) {
+                setFooterHeight(footerRef.current.offsetHeight);
+            }
+        };
+        measureFooter();
+        window.addEventListener('resize', measureFooter);
+        return () => window.removeEventListener('resize', measureFooter);
+    }, []);
+
 
     useEffect(() => {
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -141,7 +179,7 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
                         footerHeight={footerHeight}
                         setViewMode={setViewMode}
                         filters={filters}
-                        displayedCategories={displayedCategories} // <-- MODIFICA #2: Passiamo la prop
+                        displayedCategories={displayedCategories}
                     />
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center p-10 h-full">
@@ -164,7 +202,7 @@ export default function InsuranceComparisonClient({ initialData }: { initialData
                 isOpen={isPrintModalOpen} 
                 onClose={() => setPrintModalOpen(false)} 
                 offers={sortedOffers} 
-                displayedCategories={displayedCategories} // <-- MODIFICA #2: Passiamo la prop
+                displayedCategories={displayedCategories}
             />
         </div>
     );
