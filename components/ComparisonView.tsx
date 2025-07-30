@@ -18,7 +18,6 @@ import { DesktopHeaderRow } from './comparison/DesktopHeaderRow';
 
 type OfferWithScores = ReturnType<typeof useComparisonLogic>['sortedOffers'][number];
 
-// --- MODIFICA #1: Aggiorniamo le props per ricevere le categorie filtrate ---
 interface ComparisonViewProps {
   data: InsuranceData;
   offers: OfferWithScores[];
@@ -27,10 +26,9 @@ interface ComparisonViewProps {
   footerHeight: number;
   setViewMode: (mode: 'full' | 'compact' | 'summary') => void;
   filters: { selectedCoverages: string[] };
-  displayedCategories: Category[]; // Prop aggiunta
+  displayedCategories: Category[]; 
 }
 
-// === SOTTO-COMPONENTI PER LA VISTA MOBILE (invariati) ===
 const MobileOfferNavigator: React.FC<{ offers: OfferWithScores[]; visibleOfferId: number | null; onNavigate: (id: number) => void; }> = ({ offers, visibleOfferId, onNavigate }) => {
     const navRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -53,21 +51,20 @@ const MobileOfferNavigator: React.FC<{ offers: OfferWithScores[]; visibleOfferId
         </div>
     );
 };
-const MobileVisibleOfferHeader: React.FC<{ offer: OfferWithScores | undefined; clientData: InsuranceData['cliente']; }> = ({ offer, clientData }) => {
+
+const MobileVisibleOfferHeader: React.FC<{ offer: OfferWithScores | undefined; data: InsuranceData; }> = ({ offer, data }) => {
     if (!offer) return <div className="h-[152px] bg-background shadow-lg" />;
     return (
         <div className="bg-background shadow-lg">
             <div className="bg-sidebar-primary text-background p-2 flex items-center justify-between gap-4 text-xs font-medium border-b">
-                <div className="flex items-center gap-2 truncate"><Car className="h-4 w-4 shrink-0" /><span className="truncate">{clientData.prodotto}</span></div>
-                <div className="flex items-center gap-2 truncate"><User className="h-4 w-4 shrink-0" /><span className="truncate">{clientData.nome}</span></div>
+                <div className="flex items-center gap-2 truncate"><Car className="h-4 w-4 shrink-0" /><span className="truncate">{data.opportunita.argomento}</span></div>
+                <div className="flex items-center gap-2 truncate"><User className="h-4 w-4 shrink-0" /><span className="truncate">{data.cliente.nome_completo}</span></div>
             </div>
             <div className="p-4"><DesktopOfferHeader offer={offer} /></div>
         </div>
     );
 };
 
-
-// === COMPONENTE PRINCIPALE UNIFICATO ===
 export default function ComparisonView({ data, offers, viewMode, tableTopOffset, footerHeight, setViewMode, filters, displayedCategories }: ComparisonViewProps) {
     const isMobile = useIsMobile();
     const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
@@ -94,9 +91,6 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
     const startX = useRef(0);
     const scrollLeft = useRef(0);
     
-    // --- MODIFICA #2: Rimuoviamo il calcolo di `displayedCategories` da qui ---
-    // const displayedCategories = useMemo(() => { ... }); // RIMOSSO
-
     const visibleOffer = useMemo(() => offers.find((o) => o.id === visibleOfferId), [offers, visibleOfferId]);
 
     useEffect(() => {
@@ -145,7 +139,7 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
                 <div className="md:hidden flex flex-col bg-muted/30" style={{ height: `calc(100vh - ${tableTopOffset}px)` }}>
                     <header className="sticky top-0 z-10">
                         <MobileOfferNavigator offers={offers} visibleOfferId={visibleOfferId} onNavigate={handleMobileNavigate} />
-                        <MobileVisibleOfferHeader offer={visibleOffer} clientData={data.cliente} />
+                        <MobileVisibleOfferHeader offer={visibleOffer} data={data} />
                     </header>
                     <main ref={mainScrollContainerRef} className="flex-grow flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
                         {offers.map(offer => (
@@ -188,8 +182,13 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
                 <DrawerContent>
                     <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mt-4" />
                     <DrawerHeader className="text-left">
-                        <DrawerTitle className="text-xl">Osservazione Finale</DrawerTitle>
-                        <DrawerDescription className="pt-2">{visibleOffer?.osservazione}</DrawerDescription>
+                        <DrawerTitle className="text-xl">Dettagli Offerta</DrawerTitle>
+                        <DrawerDescription className="pt-2">
+                           <div><strong>Tipo Richiesta:</strong> {visibleOffer?.tipo_richiesta}</div>
+                           <div><strong>Variante:</strong> {visibleOffer?.variante}</div>
+                           <div><strong>Riassunto:</strong> {visibleOffer?.riassunto_offerta}</div>
+                           <div><strong>Osservazione:</strong> {visibleOffer?.osservazione}</div>
+                        </DrawerDescription>
                     </DrawerHeader>
                     <DrawerFooter>
                         <Button asChild className="bg-[#155044] text-white hover:bg-[#155044]/90">
@@ -211,8 +210,8 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
                 <div className={`grid bg-background w-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                     style={{ gridTemplateColumns: `18rem repeat(${offers.length}, minmax(14rem, 1fr))`, minWidth: `${18 + offers.length * 14}rem` }}>
                     <div className="sticky top-0 left-0 z-30 bg-[#155044] border-r border-b flex flex-col items-center justify-center p-3 text-center h-[7.5rem]">
-                        <Car className="h-7 w-7 text-white mb-1" /><p className="text-xs font-bold text-white leading-tight">{data.cliente.prodotto}</p>
-                        <div className="flex items-center gap-1.5 mt-2"><User className="h-3 w-3 text-white" /><p className="text-xs text-gray-50">{data.cliente.nome}</p></div>
+                        <Car className="h-7 w-7 text-white mb-1" /><p className="text-xs font-bold text-white leading-tight">{data.opportunita.argomento}</p>
+                        <div className="flex items-center gap-1.5 mt-2"><User className="h-3 w-3 text-white" /><p className="text-xs text-gray-50">{data.cliente.nome_completo}</p></div>
                     </div>
                     {offers.map(offer => (
                         <div key={offer.id} className="sticky top-0 z-20 bg-muted border-r border-b h-[7.5rem]"><DesktopOfferHeader offer={offer} /></div>
@@ -247,10 +246,10 @@ export default function ComparisonView({ data, offers, viewMode, tableTopOffset,
                             ))}
                         </React.Fragment>
                     ))}
-                     <div className="sticky left-0 z-10 bg-muted border-r border-t p-3 h-24 flex items-center"><h3 className="font-bold text-sm text-foreground">Osservazione Finale</h3></div>
+                     <div className="sticky left-0 z-10 bg-muted border-r border-t p-3 h-24 flex items-center"><h3 className="font-bold text-sm text-foreground">Dettagli Offerta</h3></div>
                         {offers.map(offer => 
                             <div key={offer.id} id={`observation-cell-${offer.id}`} className="bg-muted border-r border-t p-3 h-24 flex flex-col justify-center items-center text-center">
-                                <p className="text-xs text-muted-foreground italic mb-2">{offer.osservazione}</p>
+                                <p className="text-xs text-muted-foreground italic mb-2"><strong>{offer.variante}</strong>: {offer.riassunto_offerta}</p>
                                 <a 
                                     href={offer.pdf_link} 
                                     target="_blank" 

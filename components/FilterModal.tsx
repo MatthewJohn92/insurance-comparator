@@ -1,4 +1,54 @@
 // components/FilterModal.tsx
+
+/**
+ * FilterModal.tsx
+ * ----------------
+ * Questo componente React fornisce una finestra modale per filtrare le offerte assicurative
+ * visualizzate nell'interfaccia di comparazione. È parte integrante dell'esperienza utente
+ * in quanto consente una ricerca mirata e personalizzata basata su parametri reali.
+ *
+ * FUNZIONALITÀ PRINCIPALI:
+ *
+ * 1. SELEZIONE COMPAGNIE:
+ *    Mostra dinamicamente tutte le compagnie presenti nei dati delle offerte.
+ *    L'utente può selezionare una o più compagnie da includere nei risultati,
+ *    con gestione dello stato tramite `selectedCompanies` nel filtro.
+ *
+ * 2. SLIDER INTERATTIVI:
+ *    - **Premio Annuale**: consente di impostare un tetto massimo sul costo dell’assicurazione.
+ *    - **Punteggio Qualità**: permette di filtrare le offerte in base a una soglia minima di qualità media
+ *      (score calcolato sulle microcoperture, riportato su scala 0–100).
+ *
+ * 3. FILTRAGGIO PER COPERTURE:
+ *    Consente all’utente di selezionare coperture obbligatorie.
+ *    Se viene selezionata una copertura, solo le offerte che la includono come “attiva” (`covered: true`)
+ *    saranno mostrate nei risultati.
+ *    Include una barra di ricerca con filtro in tempo reale sulle microcoperture disponibili.
+ *
+ * 4. GESTIONE STATO E RESET:
+ *    - I filtri sono gestiti esternamente tramite lo stato `filters` e `setFilters`.
+ *    - Il bottone "Resetta Filtri" riporta tutte le selezioni ai valori iniziali:
+ *      prezzo massimo, punteggio minimo = 0, nessuna copertura o compagnia selezionata.
+ *
+ * 5. INTERFACCIA E DESIGN:
+ *    Il contenuto è impaginato all’interno del componente `Dialog` di shadcn/ui.
+ *    Il layout è responsive e ottimizzato per schermate medio-grandi.
+ *    Le interazioni sono progettate per offrire feedback immediato e semplicità d’uso.
+ *
+ * SCOPO:
+ *    Questo componente permette di costruire in tempo reale una query di filtro applicabile
+ *    alle offerte assicurative, migliorando l’esperienza di comparazione e aiutando l’utente
+ *    a trovare con precisione le opzioni più rilevanti in base alle proprie esigenze.
+ *
+ * DIPENDENZE:
+ *    - Componenti UI da shadcn/ui (Dialog, Button, Input, Slider, Checkbox, Label)
+ *    - Icone da `lucide-react`
+ *    - Stato dei filtri e dati passati dal componente genitore
+ *
+ * NOTE:
+ *    L’hook `useMemo` è usato per ottimizzare il calcolo delle compagnie, coperture e filtri derivati.
+ */
+
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -88,7 +138,7 @@ export default function FilterModal({ isOpen, onClose, filters, setFilters, data
             <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col no-print">
                 <DialogHeader>
                     <DialogTitle className="text-2xl">Filtra Offerte</DialogTitle>
-                    <DialogDescription>Affina la tua ricerca per trovare l'offerta perfetta.</DialogDescription>
+                    <DialogDescription>Affina la tua ricerca per trovare un offerta perfetta.</DialogDescription>
                 </DialogHeader>
 
                 <div className="p-1 pr-3 flex-grow overflow-y-auto space-y-6">

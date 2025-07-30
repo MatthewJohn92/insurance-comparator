@@ -1,4 +1,57 @@
 // hooks/useComparisonLogic.ts
+
+/**
+ * useComparisonLogic.ts
+ * ---------------------
+ * Questo hook personalizzato React (basato su `useMemo`) implementa la logica completa
+ * per la comparazione dinamica delle offerte assicurative in un'applicazione di confronto.
+ *
+ * FUNZIONALITÀ PRINCIPALI:
+ * 1. CALCOLO DEI PUNTEGGI:
+ *    Per ciascuna offerta, viene calcolato:
+ *    - Il punteggio medio delle micro-coperture (averageMicroScore), basato sui punteggi individuali assegnati a ciascuna copertura.
+ *    - I punteggi medi per ciascuna categoria di copertura (macroScores), derivati aggregando le micro-coperture per categoria.
+ *
+ * 2. APPLICAZIONE DEI FILTRI:
+ *    Il sistema filtra dinamicamente le offerte in base ai criteri scelti dall’utente:
+ *    - Range di prezzo (`priceRange`)
+ *    - Range di punteggio complessivo (`scoreRange`) su scala 0–100
+ *    - Compagnie assicurative selezionate
+ *    - Coperture specifiche che devono essere obbligatoriamente presenti e attive nell’offerta
+ *
+ * 3. CALCOLO DEL PUNTEGGIO FINALE:
+ *    Per ogni offerta filtrata, vengono calcolati:
+ *    - `priceScore`: punteggio da 0 a 5 che penalizza i premi più elevati, calcolato su base relativa rispetto al minimo e massimo premi trovati nel set filtrato
+ *    - `finalScore`: punteggio complessivo normalizzato che bilancia qualità coperture (70%) e prezzo (30%)
+ *    - `bestValue`: rapporto tra punteggio finale e premio, utilizzato per determinare il miglior rapporto qualità/prezzo
+ *
+ * 4. IDENTIFICAZIONE OFFERTE MIGLIORI:
+ *    Vengono individuate le 3 offerte più rilevanti:
+ *    - Miglior punteggio totale (finalScore più alto)
+ *    - Miglior prezzo (premio più basso)
+ *    - Miglior valore (bestValue più alto)
+ *
+ * 5. ORDINAMENTO E CLASSIFICA:
+ *    Le offerte vengono ordinate secondo un sistema a punteggio (rank) che assegna un peso a ciascuna delle 3 metriche sopra indicate:
+ *    - Miglior valore = +4
+ *    - Miglior punteggio = +2
+ *    - Miglior prezzo = +1
+ *    Questo consente di stabilire una gerarchia visiva e oggettiva delle offerte.
+ *
+ * 6. ASSEGNAZIONE BADGE:
+ *    Ogni offerta finale riceve una bandierina logica (`isBestScore`, `isBestPrice`, `isBestValue`) che può essere usata nella UI
+ *    per evidenziare visivamente le caratteristiche chiave.
+ *
+ * 7. OUTPUT:
+ *    L’hook restituisce:
+ *    - `sortedOffers`: lista delle offerte ordinate secondo i criteri descritti
+ *    - `allMicroCoverages`: lista piatta delle micro-coperture usata per generare dinamicamente intestazioni e controlli nei componenti di visualizzazione
+ *
+ * SCOPO:
+ *    Questo hook incapsula tutta la logica business di valutazione, filtraggio e classificazione delle offerte, 
+ *    mantenendo la UI (es. `DesktopView.tsx`) pulita e focalizzata solo sulla presentazione.
+ */
+
 'use client';
 
 import { useMemo } from 'react';
