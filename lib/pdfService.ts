@@ -5,8 +5,6 @@ import { insuranceData } from '@/app/data/insuranceData';
 import type { Category } from '@/app/data/insuranceData';
 
 // --- TIPI DI DATI ---
-
-// MODIFICA #1: Aggiunta della nuova modalità 'filtered'
 export type PrintMode = 'top3' | 'summary' | 'detailed' | 'filtered';
 
 export interface OfferForPrint {
@@ -16,6 +14,7 @@ export interface OfferForPrint {
     finalScore: number;
     macroScores: { [key: string]: number };
     coverages: Record<string, { covered: boolean; score: number; details?: string }>;
+    variante: string;
     osservazione?: string;
 }
 
@@ -70,11 +69,18 @@ export async function generatePdf(
     
     offersToPrint.forEach(offer => {
         (head[0] as any[]).push({
-            content: `${offer.company}\nCHF ${offer.premium_annuale.toFixed(2)}\nScore: ${offer.finalScore.toFixed(1)}`,
+            content: `${offer.company}\n CHF ${offer.premium_annuale.toFixed(2)}\n voto: ${offer.finalScore.toFixed(1)}`,
         });
     });
     
     let body: any[][] = [];
+
+    // Add new offer details to the PDF body
+
+    body.push([
+        { content: 'Variante', styles: macroCategoryStyles },
+        ...offersToPrint.map(o => ({ content: o.variante, styles: { ...macroCategoryStyles, halign: 'center' }}))
+    ]);
 
     categories.forEach(category => {
         body.push([
