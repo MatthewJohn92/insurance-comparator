@@ -2,9 +2,9 @@
 
 import { sortAndRankOffers } from '../../lib/comparison/ranking';
 import { addInitialScores, addFinalScores } from '../../lib/comparison/scores';
-import { insuranceData } from '../../app/data/insuranceData';
+import { mockInsuranceData } from '../mocks/mockInsuranceData';
 
-const { offerte, categorieCoperture } = insuranceData;
+const { offerte, categorieCoperture } = mockInsuranceData;
 
 describe('Ranking Logic: ranking.ts', () => {
   it('should correctly identify and assign best offer badges', () => {
@@ -16,11 +16,11 @@ describe('Ranking Logic: ranking.ts', () => {
     const bestScoreOffer = result.find(o => o.isBestScore);
     const bestValueOffer = result.find(o => o.isBestValue);
 
-    expect(bestPriceOffer?.company).toBe('Helvetia'); // ID 3, più economico
-    // CORREZIONE: Il calcolo corretto mostra che Baloise ha il finalScore più alto
+    expect(bestPriceOffer?.company).toBe('Helvetia');
     expect(bestScoreOffer?.company).toBe('Baloise');
-    // Il Best Value dipende dal calcolo, verifichiamo che esista
     expect(bestValueOffer).toBeDefined();
+    // Il calcolo preciso del best value è complesso, ma dai dati Baloise è un forte candidato
+    expect(bestValueOffer?.company).toBe('Baloise');
   });
 
   it('should sort offers based on rank, then by finalScore', () => {
@@ -28,15 +28,13 @@ describe('Ranking Logic: ranking.ts', () => {
     const offersWithFinalScores = addFinalScores(offersWithInitialScores);
     const result = sortAndRankOffers(offersWithFinalScores);
 
-    // Verifichiamo che la lista sia ordinata in modo decrescente per rank
     for (let i = 0; i < result.length - 1; i++) {
-        expect(result[i].rank).toBeGreaterThanOrEqual(result[i+1].rank);
+      expect(result[i].rank).toBeGreaterThanOrEqual(result[i + 1].rank);
     }
     
-    // Se due offerte hanno lo stesso rank, quella con il finalScore più alto dovrebbe venire prima
     const offersWithSameRank = result.filter(o => o.rank === result[1].rank);
     if (offersWithSameRank.length > 1) {
-        expect(offersWithSameRank[0].finalScore).toBeGreaterThanOrEqual(offersWithSameRank[1].finalScore);
+      expect(offersWithSameRank[0].finalScore).toBeGreaterThanOrEqual(offersWithSameRank[1].finalScore);
     }
   });
 
