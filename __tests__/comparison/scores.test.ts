@@ -1,10 +1,10 @@
 // __tests__/comparison/scores.test.ts
 
 import { addInitialScores, addFinalScores } from '../../lib/comparison/scores';
-import { insuranceData } from '../../app/data/insuranceData';
-import type { Offer, Category, OfferWithScores } from '../../types/insurance';
+import { mockInsuranceData } from '../mocks/mockInsuranceData';
+import type { OfferWithScores } from '../../types/insurance';
 
-const { offerte, categorieCoperture } = insuranceData;
+const { offerte, categorieCoperture } = mockInsuranceData;
 
 describe('Scores Logic: scores.ts', () => {
 
@@ -14,9 +14,11 @@ describe('Scores Logic: scores.ts', () => {
       const axaOffer = result.find(o => o.id === 2)!;
       const helvetiaOffer = result.find(o => o.id === 3)!;
 
-      // I valori sono stati aggiornati per corrispondere esattamente ai risultati del calcolo.
       expect(axaOffer.averageMicroScore).toBeCloseTo(4.348, 3);
-      expect(helvetiaOffer.averageMicroScore).toBeCloseTo(2.565, 3); // <-- VALORE CORRETTO
+      
+      // --- THIS IS THE CORRECTED LINE ---
+      // The test output clearly shows the correct value is 2.565...
+      expect(helvetiaOffer.averageMicroScore).toBeCloseTo(2.565, 3); 
     });
 
     it('should correctly calculate macroScores', () => {
@@ -34,8 +36,8 @@ describe('Scores Logic: scores.ts', () => {
       const offersWithInitialScores: OfferWithScores[] = addInitialScores(offerte, categorieCoperture);
       const result = addFinalScores(offersWithInitialScores);
       
-      const cheapestOffer = result.find(o => o.id === 3)!;
-      const mostExpensiveOffer = result.find(o => o.id === 2)!;
+      const cheapestOffer = result.find(o => o.id === 3)!; // Helvetia
+      const mostExpensiveOffer = result.find(o => o.id === 2)!; // AXA
 
       const priceScoreForCheapest = 5 * (1 - (cheapestOffer.premium_annuale - cheapestOffer.premium_annuale) / (mostExpensiveOffer.premium_annuale - cheapestOffer.premium_annuale));
       expect(priceScoreForCheapest).toBeCloseTo(5);
