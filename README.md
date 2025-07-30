@@ -50,3 +50,8 @@ Un’applicazione web responsive in **Next.js** e **TypeScript** che consente di
 ---
 
 ## 🏗️ Project Structure
+
+
+##Testing
+Add the .env.local
+NEXT_PUBLIC_APP_URL=http://localhost:3000
